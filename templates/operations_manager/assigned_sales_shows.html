@@ -1,0 +1,59 @@
+{% extends "layout/base.html" %}
+{% block content %}
+<main>
+    <div class="container">
+        <!-- Tabs for filtering by label -->
+        <ul class="nav nav-tabs">
+            <li class="nav-item">
+                <a class="nav-link {% if active_label == 'EHUB' %}active{% endif %}"
+                    href="{% url 'operations_manager:assigned-sales-shows' 'EHUB' %}">EHUB</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if active_label == 'EHUB2' %}active{% endif %}"
+                    href="{% url 'operations_manager:assigned-sales-shows' 'EHUB2' %}">EHUB2</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if active_label == 'EP' %}active{% endif %}"
+                    href="{% url 'operations_manager:assigned-sales-shows' 'EP' %}">EP</a>
+            </li>
+        </ul>
+
+        <!-- Display Sales Shows -->
+        {% if assigned_shows %}
+        <form method="POST" action="{% url 'operations_manager:assign_sales_show' %}">
+            {% csrf_token %}
+            <table class="table table-bordered mt-3">
+                <thead>
+                    <tr>
+                        <th scope="col">Show Name</th>
+                        <th scope="col">Leads Count</th>
+                        <th scope="col">Assigned Agent</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for show in assigned_shows %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'operations_manager:show-detail' show.id %}" class="btn btn-primary">
+                                {{ show.name }}
+                            </a>
+                        </td>
+                        <td>{{ show.leads.count }}</td>
+                        <td>
+                            {% if show.Agent %}
+                            {{ show.Agent.username }}
+                            {% else %}
+                            Not Assigned
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </form>
+        {% else %}
+        <p>No Sales Shows available for the selected label.</p>
+        {% endif %}
+    </div>
+</main>
+{% endblock %}

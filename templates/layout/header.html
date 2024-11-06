@@ -1,0 +1,193 @@
+{% load static %}
+
+<style>
+  .nav-bar-counter {
+    position: relative;
+  }
+
+  .badge {
+    font-size: 0.75rem;
+    padding: 5px;
+  }
+</style>
+
+<header id="header" class="header fixed-top d-flex align-items-center">
+  <div class="d-flex align-items-center justify-content-between">
+    <a href="/" class="logo d-flex align-items-center">
+      <img src="{% static 'assets/Genie_logo.jpeg' %}" alt="" />
+      <span class="d-none d-lg-block">The Genie</span>
+    </a>
+    <i class="bi bi-list toggle-sidebar-btn"></i>
+  </div>
+  <!-- End Logo -->
+
+  <nav class="header-nav ms-auto">
+    <ul class="d-flex align-items-center">
+      <li class="nav-item d-block d-lg-none">
+        <a class="nav-link nav-icon search-bar-toggle" href="#">
+          <i class="bi bi-search"></i>
+        </a>
+      </li>
+      <!-- End Search Icon-->
+
+      <li class="nav-item dropdown">
+        {% if request.user.is_authenticated %}
+        {% with request.user.groups.first as user_group %}
+        {% if user_group %}
+        {% if user_group.name == 'operations_team_leader' %}
+        <a class="nav-link nav-icon nav-bar-counter" href="{% url 'operations_team_leader:notifications' %}">
+        {% elif user_group.name == 'operations_manager' %}
+        <a class="nav-link nav-icon nav-bar-counter" href="{% url 'operations_manager:notifications' %}">
+        {% elif user_group.name == 'leads' %}
+        <a class="nav-link nav-icon nav-bar-counter" href="{% url 'leads:notifications' %}">
+        {% elif user_group.name == 'sales_manager' %}
+        <a class="nav-link nav-icon nav-bar-counter" href="{% url 'sales_manager:notifications' %}">
+        {% elif user_group.name == 'sales_team_leader' %}
+        <a class="nav-link nav-icon nav-bar-counter" href="{% url 'sales_team_leader:notifications' %}">
+        {% elif user_group.name == 'sales' %}
+        <a class="nav-link nav-icon nav-bar-counter" href="{% url 'sales:notifications' %}">
+        {% endif %}
+        {% endif %}
+        {% endwith %}
+        {% endif %}
+
+          <i class="bi bi-bell"></i>
+          {% if unread_notifications_count > 0 %}
+          <span class="badge notification-badge bg-primary badge-number">{{ unread_notifications_count }}</span>
+          {% else %}
+              <span class="badge notification-badge bg-primary badge-number" style="display: none;"></span>
+          {% endif %}
+      </li>
+      <!-- End Notification Nav -->
+
+
+      <li class="nav-item dropdown pe-3">
+        <a class="nav-link nav-profile d-flex align-items-center pe-0" href="#" data-bs-toggle="dropdown">
+
+          <span class="d-none d-md-block dropdown-toggle px-2"
+            style="font-size: 1.2rem">{{request.user.username}}</span> </a>
+        <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow profile">
+          <li class="dropdown-header">
+            <h6>{{request.user.username}}</h6>
+            <span>{{request.user.groups.first.name}}</span>
+          </li>
+          <li>
+            <hr class="dropdown-divider" />
+          </li>
+
+          <li>
+            <a class="dropdown-item d-flex align-items-center" href="{% url 'main:logout' %}">
+              <i class="bi bi-box-arrow-right"></i>
+              <span>Sign Out</span>
+            </a>
+          </li>
+        </ul>
+        <!-- End Profile Dropdown Items -->
+      </li>
+      <!-- End Profile Nav -->
+    </ul>
+  </nav>
+  <!-- End Icons Navigation -->
+</header>
+
+<!-- <script>
+  const notificationSocket = new WebSocket(
+    'ws://' + window.location.host + '/ws/notifications/'
+  );
+
+  document.addEventListener('DOMContentLoaded', function () {
+    loadNotifications();
+  });
+
+  function loadNotifications() {
+    const notifications = JSON.parse(localStorage.getItem('notifications')) || [];
+
+    // Filter unread notifications
+    const unreadNotifications = notifications.filter(notification => !notification.read);
+
+    const notificationBadge = document.querySelector('.badge-number');
+    unreadNotificationsCount = unreadNotifications.length;
+    if (unreadNotificationsCount > 0) {
+      notificationBadge.textContent = unreadNotificationsCount;
+      notificationBadge.style.display = 'inline';
+    }
+  }
+
+  notificationSocket.onmessage = function (e) {
+    const data = JSON.parse(e.data);
+    const message = data['message'];
+    const id = data['id'];
+    const read = data['read'];
+    const state = data['state'];
+
+    // Save and display new notification
+    const newNotification = {
+      id: id,
+      title: 'New Notification',
+      message: message,
+      timestamp: new Date().toLocaleTimeString(),
+      read: read
+    };
+
+    saveNotification(newNotification);
+
+    const popup = Notification({
+      position: 'top-right',
+      duration: 5000,
+      isHidePrev: false,
+      isHideTitle: false,
+      maxOpened: 3,
+    });
+
+    if (state == 'SUCCESS') {
+      // success
+      popup.success({
+        title: newNotification.title,
+        message: newNotification.message
+      });
+    } else if (state == 'INFO') {
+      // info
+      popup.info({
+        title: newNotification.title,
+        message: newNotification.message
+      })
+    } else if (state == 'WARNING') {
+      // warning
+      popup.warning({
+        title: newNotification.title,
+        message: newNotification.message
+      })
+    } else if (state == 'ERROR') {
+      // error
+      popup.error({
+        title: newNotification.title,
+        message: newNotification.message
+      })
+    }
+
+    loadNotifications();
+  };
+
+  function saveNotification(notification) {
+    const notifications = JSON.parse(localStorage.getItem('notifications')) || [];
+    const unreadNotifications = notifications.filter(notification => !notification.read);
+
+    // Update the existing notification if it already exists
+    const existingIndex = unreadNotifications.findIndex(n => n.id === notification.id);
+    if (existingIndex > -1) {
+      unreadNotifications[existingIndex] = notification;
+    } else {
+      unreadNotifications.push(notification);
+    }
+
+    localStorage.setItem('notifications', JSON.stringify(unreadNotifications));
+  }
+
+  notificationSocket.onclose = function (e) {
+    console.error('Notification socket closed unexpectedly');
+  };
+
+  document.querySelector('.nav-bar-counter').addEventListener('click', function (e) {
+    localStorage.removeItem('notifications');
+  })
+</script> -->

@@ -1,0 +1,90 @@
+{% extends "layout/base.html" %}
+
+{% block content %}
+<main>
+    <div class="container">
+        <section class="section">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Ready Shows</h5>
+
+                            <!-- Tabs for filtering by label -->
+                            <ul class="nav nav-tabs">
+                                <li class="nav-item">
+                                    <a class="nav-link {% if active_label == 'EHUB' %}active{% endif %}"
+                                        href="{% url 'operations_manager:ready-shows' 'EHUB' %}">EHUB</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if active_label == 'EHUB2' %}active{% endif %}"
+                                        href="{% url 'operations_manager:ready-shows' 'EHUB2' %}">EHUB2</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if active_label == 'EP' %}active{% endif %}"
+                                        href="{% url 'operations_manager:ready-shows' 'EP' %}">EP</a>
+                                </li>
+                            </ul>
+
+                            {% if ready_shows %}
+                            <table class="table table-bordered mt-3">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Sheet Name</th>
+                                        <th scope="col">Done Date</th>
+                                        <th scope="col">Leads Count</th>
+                                        <th scope="col">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for ready_show in ready_shows %}
+                                    <tr>
+                                        <td>{{ ready_show.sheet.name }}</td>
+                                        <td>{{ ready_show.sheet.done_date }}</td>
+                                        <td>{{ ready_show.leads.count }}</td>
+                                        <td>
+                                            <form method="post"
+                                                action="{% url 'operations_manager:cut-ready-show' ready_show.id %}">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-success">Cut Show</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            {% else %}
+                            <p>No Ready Shows available.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+
+    <script>
+        function setActiveTab(tab) {
+            localStorage.setItem('activeTab', tab);
+        }
+
+        // On page load, set the active tab based on stored value
+        window.onload = function() {
+            const activeTab = localStorage.getItem('activeTab');
+            if (activeTab) {
+                // Remove 'active' class from all tabs
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    link.classList.remove('active');
+                });
+                // Set the active class for the stored tab
+                const activeLink = document.querySelector(`.nav-link[href*="${activeTab}"]`);
+                if (activeLink) {
+                    activeLink.classList.add('active');
+                }
+            }
+        };
+    </script>
+
+</main>
+{% endblock content %}

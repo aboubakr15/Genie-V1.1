@@ -1,0 +1,232 @@
+{% extends 'layout/base.html' %}
+
+<link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+
+<style>
+    /* Custom styles for DataTable */
+    #leadsTable {
+        width: 100%; /* Ensure the table takes full width */
+    }
+    .table-custom-row {
+        background-color: #f9f9f9;
+    }
+    .sub-row {
+        display: flex;
+        justify-content: space-between;
+    }
+    .sub-row td {
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        border-top: none;
+    }
+</style>
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card p-4">
+        <h1>Team Prospect: {{team_name}}</h1>
+
+        <!-- Bootstrap Tabs for Termination Codes -->
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+            {% for code in termination_codes %}
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link {% if code.id == selected_code.id %}active{% endif %}" 
+                       id="tab-{{ code.id }}-tab" 
+                       {% if role == "sales_team_leader" %}
+                       href="{% url 'sales_team_leader:view-team-prospect-with-id' code.id %}" 
+                       {% else %}
+                       href="{% url 'sales_manager:view-team-prospect-with-leader' code.id leader.id %}" 
+                       {% endif %}
+                       role="tab" 
+                       aria-controls="tab-{{ code.id }}" 
+                       aria-selected="{% if code.id == selected_code.id %}true{% else %}false{% endif %}">
+                       {{ code.name }}
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+
+        <div class="tab-content mt-3" id="myTabContent">
+            <div class="tab-pane fade show active" 
+                 id="tab-{{ selected_code.id }}" 
+                 role="tabpanel" 
+                 aria-labelledby="tab-{{ selected_code.id }}-tab">
+
+                <h4>{{ selected_code.full_name }}</h4>
+                {% if leads_data|length > 0 %}
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="table-responsive">
+                            <table id="leadsTable" data-toggle="table" 
+                            data-search="true" 
+                            data-pagination="true"
+                            data-show-columns="true"
+                            data-mobile-responsive="true"
+                            class="table table-striped table-bordered table-hover">
+                                <thead>
+                                    <tr class="table-primary">
+                                        <th>Company Name</th>
+                                        {% if selected_code.full_name == "Flag" %}
+                                        <th>Qualified</th>
+                                        {% endif %}
+                                        <th>Phone No.</th>
+                                        <th>E-mail</th>
+                                        <th>Time Zone</th>
+                                        <th>Termination Code</th>
+                                        <th>CB Date</th>
+                                        <th>Status</th>
+                                        <th>No. of Rooms</th>
+                                        <th>No. of Nights</th>
+                                        <th>Sales Agent</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for lead_data in leads_data %}
+                                    <tr>
+                                        <td>{{ lead_data.lead.name }}</td>
+                                        {% if lead_data.termination == "Flag" %}
+                                            <td>
+                                                <input type="checkbox" name="is_qualified_{{ lead_data.lead.id }}" {% if lead_data.is_qualified %}checked{% endif %}/> 
+                                            </td>
+                                        {%endif%}
+                                        <td>
+                                            {{ lead_data.phones|join:"<br/>" }}
+                                            <input type="text" class="form-control new-phone mt-2" placeholder="Add Phone">
+                                            <button type="button" class="btn btn-sm btn-primary add-phone" data-lead-id="{{ lead_data.lead.id }}" data-sheet-id="{{ selected_code.id }}">Add</button>
+                                        </td>
+                                        <td>
+                                            {{ lead_data.emails|join:"<br/>" }}
+                                            <input type="text" class="form-control new-email mt-2" placeholder="Add Email">
+                                            <button type="button" class="btn btn-sm btn-primary add-email" data-lead-id="{{ lead_data.lead.id }}" data-sheet-id="{{ selected_code.id }}">Add</button>
+                                        </td>
+                                        <td>{{ lead_data.timezone }}</td>
+                                        <td>
+                                            <select name="termination_code_{{ lead_data.lead.id }}_{{ lead_data.sales_show_id }}" class="form-control termination-code-select">
+                                                {% for code in termination_codes_selection %}
+                                                <option value="{{ code.id }}" {% if code.full_name == lead_data.termination %}selected{% endif %}>{{ code.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </td>
+                                        <td>
+                                            {% if lead_data.previous_cb_dates %}
+                                                <ul class="list-unstyled">
+                                                    {% for old_cb_date in lead_data.previous_cb_dates %}
+                                                        <li><strong>{{ old_cb_date|date:"Y-m-d H:i" }}</strong></li>
+                                                    {% endfor %}
+                                                </ul>
+                                            {% endif %}
+                                            
+                                            <input
+                                                   type="date" 
+                                                   name="cb_date_{{ lead_data.lead.id }}_{{ lead_data.sales_show_id }}" 
+                                                   value="{{ lead_data.cb_date|date:'Y-m-d' }}" 
+                                                   class="form-control cb-date" 
+                                                   id="cb_date_{{ lead_data.lead.id }}_{{ lead_data.sales_show_id }}" />
+                                        </td>
+                                        <td>
+                                            <select name="status_{{ lead_data.lead.id }}_{{ lead_data.sales_show_id }}" class="form-control custom-select">
+                                                <option value="" {% if not lead_data.status %}selected{% endif %}></option> 
+                                                <option value="booked" {% if lead_data.status == 'booked' %}selected{% endif %}>Booked</option>
+                                                <option value="not_booked" {% if lead_data.status == 'not_booked' %}selected{% endif %}>Not Booked</option>
+                                            </select>
+                                        </td>
+                                        <td><input type="number" name="rooms_{{ lead_data.lead.id }}_{{ lead_data.sales_show_id }}" class="form-control" value="{{ lead_data.num_rooms }}"></td>
+                                        <td><input type="number" name="nights_{{ lead_data.lead.id }}_{{ lead_data.sales_show_id }}" class="form-control" value="{{ lead_data.num_nights }}"></td>
+                                        <td>{{ lead_data.Agent }}</td>
+                                    </tr>
+                                    <!-- Sub-row for additional fields like Special Notes and Options -->
+                                    <tr class="table-custom-row">
+                                        <td colspan="10">
+                                            <div class="sub-row">
+                                                <div><strong>Show:</strong> {{ lead_data.sales_show }} </div>
+                                                <div>
+                                                    <strong>Special Notes:</strong>
+                                                    <textarea name="notes_{{ lead_data.lead.id }}_{{ lead_data.sales_show_id }}" class="form-control">{{ lead_data.notes|default:"" }}</textarea>
+                                                </div>
+                                                <div>
+                                                    <strong>Options:</strong>
+                                                    <textarea name="options_{{ lead_data.lead.id }}_{{ lead_data.sales_show_id }}" class="form-control">{{ lead_data.options|default:"" }}</textarea>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </form>
+                {% else %}
+                    <div class="alert alert-warning">No leads available for this termination code.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>  
+
+<script>
+    $(document).ready(function() {
+        $('#leadsTable').DataTable({
+            "paging": true,
+            "searching": true,
+            "ordering": true,
+            "order": [],
+        });
+
+        $('.add-phone').on('click', function() {
+            var leadId = $(this).data('lead-id');
+            var sheetId = $(this).data('sheet-id');
+            var newPhone = $(this).siblings('.new-phone').val();
+
+            if (newPhone) {
+                $.ajax({
+                    url: '{% url "api:add_phone_number" %}',
+                    method: 'POST',
+                    data: {
+                        lead_id: leadId,
+                        sheet_id: sheetId,
+                        phone: newPhone,
+                        csrfmiddlewaretoken: '{{ csrf_token }}'
+                    },
+                    success: function(response) {
+                        $('#phone-numbers-display-' + leadId).append('<br>' + newPhone);
+                        $(this).siblings('.new-phone').val('');
+                    }.bind(this),
+                    error: function(xhr) {
+                        alert('Error adding phone number: ' + xhr.responseText);
+                    }
+                });
+            }
+        });
+
+        $('.add-email').on('click', function() {
+            var leadId = $(this).data('lead-id');
+            var sheetId = $(this).data('sheet-id');
+            var newEmail = $(this).siblings('.new-email').val();
+
+            if (newEmail) {
+                $.ajax({
+                    url: '{% url "api:add_email" %}',
+                    method: 'POST',
+                    data: {
+                        lead_id: leadId,
+                        sheet_id: sheetId,
+                        email: newEmail,
+                        csrfmiddlewaretoken: '{{ csrf_token }}'
+                    },
+                    success: function(response) {
+                        $('#emails-display-' + leadId).append('<br>' + newEmail);
+                        $(this).siblings('.new-email').val('');
+                    }.bind(this),
+                    error: function(xhr) {
+                        alert('Error adding email: ' + xhr.responseText);
+                    }
+                });
+            }
+        });
+    });
+</script>
+{% endblock %}

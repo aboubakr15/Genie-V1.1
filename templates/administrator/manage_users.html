@@ -1,0 +1,104 @@
+{% extends "layout/base.html" %}
+
+{% block content %}
+<main>
+  <div class="container">
+    <section class="section">
+      <div class="row">
+        <div class="col-md-12">
+          <div class="card">
+            <div class="card-header d-flex justify-content-between">
+              <h5 class="card-title mb-0" style="font-size: 1.5rem;">User List</h5>
+              <form method="get" class="mb-4">
+                <div class="form-group row justify-content-center">
+                    <div class="input-group">
+                      <input type="text" name="q" value="{{ query }}" placeholder="Search users..." class="form-control" style="font-size: 1.2rem;">
+                      <button type="submit" class="btn btn-primary">Search</button>
+                    </div>
+                </div>
+              </form>
+            </div>
+            <div class="card-body">
+              {% if page_obj %}
+                <div class="table-responsive">
+                  <table class="table table-striped">
+                    <thead>
+                      <tr>
+                        <th>Username</th>
+                        <th>Status</th>
+                        <th>Last Visit</th>
+                        <th>Role</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for user in page_obj %}
+                        <tr>
+                          <td>{{ user.username }}</td>
+                          <td>{% if user.is_online %} <div class="badge bg-success">Online<badge/> {% else %} <div class="badge bg-danger">Offline</div> {% endif %}</td>
+                          <td>{{ user.last_login|date:"F j, Y, g:i a" }}</td>
+                          <td>{{ user.groups.first.name }}</td>
+                          <td>
+                            <a href="{% url 'administrator:edit-user' user.id %}" class="btn btn-warning btn-sm">Edit</a>
+                            <a href="{% url 'administrator:delete-user' user.id %}" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal-{{ user.id }}">Delete</a>
+                          </td>
+                        </tr>
+                      {% empty %}
+                        <tr>
+                          <td colspan="5" class="text-center">No users found.</td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+
+                  <div class="pagination d-flex justify-content-between">
+                    <span class="step-links">
+                      {% if page_obj.has_previous %}
+                        <a href="?page=1{% if query %}&q={{ query }}{% endif %}">First</a>
+                        <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}">Previous</a>
+                      {% endif %}
+                    </span>
+                    <span class="current">
+                      Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+                    </span>
+                    <span class="step-links">
+                      {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}">Next</a>
+                        <a href="?page={{ page_obj.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}">Last</a>
+                      {% endif %}
+                    </span>
+                  </div>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  {% for user in page_obj %}
+    <div class="modal fade" id="confirmDeleteModal-{{ user.id }}" tabindex="-1" aria-labelledby="confirmDeleteLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="confirmDeleteLabel">Confirm Deletion</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            Are you sure you want to delete the user "{{ user.username }}"?
+          </div>
+          <div class="modal-footer">
+            <form method="post" action="{% url 'administrator:delete-user' user.id %}">
+              {% csrf_token %}
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-danger">Delete</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+
+</main>
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends "layout/base.html" %}
+{% load custom_filters %}
+{% block content %}
+<main>
+    <div class="container">
+        <!-- Tabs for filtering by label -->
+        <ul class="nav nav-tabs">
+            <li class="nav-item">
+                <a class="nav-link {% if active_label == 'EHUB' %}active{% endif %}"
+                    href="{% url 'operations_manager:unassigned-sales-shows' 'EHUB' %}">EHUB</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if active_label == 'EHUB2' %}active{% endif %}"
+                    href="{% url 'operations_manager:unassigned-sales-shows' 'EHUB2' %}">EHUB2</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if active_label == 'EP' %}active{% endif %}"
+                    href="{% url 'operations_manager:unassigned-sales-shows' 'EP' %}">EP</a>
+            </li>
+        </ul>
+
+        <!-- Updated Sales Shows Table -->
+        {% if unassigned_shows %}
+        <form method="POST" action="{% url 'operations_manager:assign_sales_show' %}">
+            {% csrf_token %}
+            <table class="table table-bordered mt-3">
+                <thead>
+                    <tr>
+                        <th scope="col">Show Name</th>
+                        <th scope="col">Leads Count</th>
+                        <th scope="col">New Leads</th>
+                        <th scope="col">(EST, CEN, PAC)</th> <!-- New column header for time zones -->
+                        <th scope="col">Action</th>
+                        <th scope="col">Remove</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for show in unassigned_shows %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'operations_manager:show-detail' show.id %}" class="btn btn-primary">
+                                {{ show.name }}
+                            </a>
+                        </td>
+                        <td>{{ show.leads.count }}</td>
+                        <td>{{ blue_red_leads_counts|get_item:show.id|default:0 }}</td>
+                        <td>
+                            {% with counts=timezone_counts|get_item:show.id %}
+                                ({{ counts.est|default:0 }}, {{ counts.cen|default:0 }}, {{ counts.pac|default:0 }})
+                            {% endwith %}
+                        </td>
+                        <td>
+                            <select name="agent_id_{{ show.id }}" class="form-select">
+                                <option value="">Select Agent</option>
+                                {% for agent in sales_agents %}
+                                <option value="{{ agent.id }}">{{ agent.username }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="btn btn-primary mt-2" name="assign_show_id"
+                                value="{{ show.id }}">
+                                Assign
+                            </button>
+                        </td>
+                        <td>
+                            <form method="POST" action="{% url 'operations_manager:delete_sales_show' show.id %}" style="display:inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="active_label" value="{{ active_label }}">  <!-- Include active label -->
+                                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </form>
+        {% else %}
+        <p>No Sales Shows available for the selected label.</p>
+        {% endif %}
+    </div>
+
+    <script>
+        function setActiveTab(tab) {
+            localStorage.setItem('activeTab', tab);
+        }
+
+        // On page load, set the active tab based on stored value
+        window.onload = function() {
+            const activeTab = localStorage.getItem('activeTab');
+            if (activeTab) {
+                // Remove 'active' class from all tabs
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    link.classList.remove('active');
+                });
+                // Set the active class for the stored tab
+                const activeLink = document.querySelector(`.nav-link[href*="${activeTab}"]`);
+                if (activeLink) {
+                    activeLink.classList.add('active');
+                }
+            }
+        };
+    </script>
+
+</main>
+{% endblock %}
+
+

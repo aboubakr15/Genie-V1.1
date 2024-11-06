@@ -1,0 +1,57 @@
+{% extends "layout/base.html" %}
+
+{% block content %}
+<main>
+    <div class="container">
+        <section class="section">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Done Ready Shows</h5>
+
+                            <ul class="nav nav-tabs">
+                                <li class="nav-item">
+                                    <a class="nav-link {% if active_label == 'EHUB' %}active{% endif %}"
+                                        href="{% url 'operations_manager:done-ready-shows' 'EHUB' %}">EHUB</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if active_label == 'EHUB2' %}active{% endif %}"
+                                        href="{% url 'operations_manager:done-ready-shows' 'EHUB2' %}">EHUB2</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if active_label == 'EP' %}active{% endif %}"
+                                        href="{% url 'operations_manager:done-ready-shows' 'EP' %}">EP</a>
+                                </li>
+                            </ul>
+
+                            {% if done_shows %}
+                            <table class="table table-bordered mt-3">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Sheet Name</th>
+                                        <th scope="col">Leads Count</th>
+                                        <th scope="col">Done at</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for ready_show in done_shows %}
+                                    <tr>
+                                        <td>{{ ready_show.sheet.name }}</td>
+                                        <td>{{ ready_show.leads.count }}</td>
+                                        <td>{{ ready_show.done_date }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            {% else %}
+                            <p>No Ready Done Shows available.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</main>
+{% endblock %}
