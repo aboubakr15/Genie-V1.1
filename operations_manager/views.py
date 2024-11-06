@@ -229,9 +229,14 @@ def ready_shows_view(request, label=None):
     # Filter ReadyShows based on the label
     ready_shows = ReadyShow.objects.filter(label=label, is_done=False).order_by("-id")
 
-    # Pass the active label to the template to highlight the active tab
+    # Pagination
+    paginator = Paginator(ready_shows, 30)  # Show 10 items per page (you can adjust thiss)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Pass the active label and paginated queryset to the template
     context = {
-        'ready_shows': ready_shows,
+        'ready_shows': page_obj,  # Use paginated queryset
         'active_label': label,
     }
 
@@ -240,15 +245,21 @@ def ready_shows_view(request, label=None):
 
 @user_passes_test(lambda user: is_in_group(user, "operations_manager"))
 def done_ready_shows(request, label=None):
-    done_shows = ReadyShow.objects.filter(is_done=True).order_by("-id")
-    
+    # Default label if not passed
     if label not in ['EHUB', 'EHUB2', 'EP']:
         label = 'EHUB'
     
-    done_shows = ReadyShow.objects.filter(label=label, is_done=True)
+    # Filter Done ReadyShows based on the label
+    done_shows = ReadyShow.objects.filter(label=label, is_done=True).order_by("-id")
+
+    # Pagination
+    paginator = Paginator(done_shows, 30)  # Show 10 items per page (adjust this number as needed)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Pass the active label and paginated queryset to the template
     context = {
-        'done_shows': done_shows,
-        'label': label,
+        'done_shows': page_obj,  # Use paginated queryset
         'active_label': label,
     }
 
@@ -261,8 +272,13 @@ def unassigned_sales_shows(request, label='EHUB'):
     # Get unassigned shows based on the label
     unassigned_shows = SalesShow.objects.filter(Agent__isnull=True, label=label).order_by("-id")
     
+    # Pagination
+    paginator = Paginator(unassigned_shows, 40)  # Show 10 items per page (you can adjust this)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     timezone_counts = {}
-    for show in unassigned_shows:
+    for show in page_obj:
         # Count leads based on the time zone
         est_count = show.leads.filter(time_zone='EST').count()
         cen_count = show.leads.filter(time_zone='CEN').count()
@@ -277,19 +293,19 @@ def unassigned_sales_shows(request, label='EHUB'):
 
     # Get sales managers, team leaders, and sales team
     sales_managers = User.objects.filter(groups__name='sales_manager')
-    team_leader = SalesTeams.objects.filter(label=label).values('leader')
+    team_leader = SalesTeams.objects.values('leader')
     sales_team = User.objects.filter(Q(groups__name='sales') & Q(id__in=UserLeader.objects.filter(leader_id__in=team_leader).values('user'))).distinct()
-    openers_closers = User.objects.filter(id__in=SalesTeams.objects.filter(label=label).values('openers_closers')).distinct()
+    openers_closers = User.objects.filter(id__in=SalesTeams.objects.values('openers_closers')).distinct()
     leader_user = User.objects.filter(id__in=team_leader)
     sales_agents = sales_managers.union(sales_team, leader_user, openers_closers)
 
     # Create a dictionary to hold counts of leads with colors
     blue_red_leads_counts = {}
-    for show in unassigned_shows:
+    for show in page_obj:
         blue_red_leads_counts[show.id] = LeadsColors.objects.filter(lead__in=show.leads.all(), sheet=show.sheet, color__in=['blue', 'red']).count()
 
     context = {
-        'unassigned_shows': unassigned_shows,
+        'unassigned_shows': page_obj,  # Use paginated queryset
         'label': label,
         'sales_agents': sales_agents,
         'active_label': label,
