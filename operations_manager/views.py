@@ -194,7 +194,7 @@ def process_all_ready_shows(request, ready_show_ids):
     """
     for ready_show_id in ready_show_ids:
         cut_ready_show_into_sales_shows(request, ready_show_id)
-        
+
 
 def cut_ready_shows(request):
     if request.method == "POST":
@@ -305,7 +305,7 @@ def done_ready_shows(request, label=None):
 @user_passes_test(lambda user: is_in_group(user, "operations_manager"))
 def unassigned_sales_shows(request, label='EHUB'):
     # Get unassigned shows based on the label
-    unassigned_shows = SalesShow.objects.filter(Agent__isnull=True, label=label).order_by("-id")
+    unassigned_shows = SalesShow.objects.filter(Agent__isnull=True, label=label, is_archived=False).order_by("-id")
 
     # Pagination
     paginator = Paginator(unassigned_shows, 40)
@@ -425,7 +425,6 @@ def price_requests_view(request):
     return render(request, 'operations_manager/price_request.html', context)
 
 
-
 @user_passes_test(lambda user: is_in_group(user, "operations_manager"))
 def update_price_requests(request):
     if request.method == 'POST':
@@ -491,11 +490,24 @@ def notifications(request):
 
 
 @user_passes_test(lambda user: is_in_group(user, "operations_manager"))
-def delete_sales_show(request, show_id):
+def archive_sales_show(request, show_id):
     if request.method == 'POST':
         show = get_object_or_404(SalesShow, id=show_id)  # Fetch the show by ID
-        show.delete()  # Delete the show
+        show.is_archived = True
+        show.save()  # Save the changes to the database
         
         # Get the active tab from the request
         active_label = request.POST.get('active_label', 'EHUB')  # Default to 'EHUB' if not provided
         return redirect('operations_manager:unassigned-sales-shows', active_label)  # Redirect to the active tab
+
+
+def archived_sales_shows(request):
+    archived_shows = SalesShow.objects.filter(is_archived=True).order_by('-done_date')
+
+    # Pagination
+    paginator = Paginator(archived_shows, 10)  # Show 10 shows per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'operations_manager/archived_sales_shows.html', {'page_obj': page_obj})
+

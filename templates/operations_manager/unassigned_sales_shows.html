@@ -65,12 +65,11 @@
                             {% endwith %}
                         </td>
                         <td>
-                            <form method="POST" action="{% url 'operations_manager:delete_sales_show' show.id %}"
+                            <form method="POST" action="{% url 'operations_manager:archive-sales-show' show.id %}"
                                 style="display:inline;">
                                 {% csrf_token %}
-                                <input type="hidden" name="active_label" value="{{ active_label }}">
-                                <!-- Include active label -->
-                                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                <input type="hidden" name="active_label" value="{{ active_label }}"> <!-- Include active label -->
+                                <button type="submit" class="btn btn-danger btn-sm">Archive</button>
                             </form>
                         </td>
                     </tr>

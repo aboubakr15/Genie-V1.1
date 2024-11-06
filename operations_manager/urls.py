@@ -2,8 +2,9 @@ from django.urls import path
 from .views import (assign_lead_to_leader, done_ready_shows, index, manage_leads_teams,
     sheet_detail, unassigned_sales_shows, view_agent_done_shows, view_sales_agents)
 
-from .views import (assign_sales_show, ready_shows_view, cut_ready_show_into_sales_shows, price_requests_view, cut_ready_shows,
-                    assigned_sales_shows, update_price_requests, manage_referrals, notifications, delete_sales_show)
+from .views import (assign_sales_show, ready_shows_view, cut_ready_show_into_sales_shows, price_requests_view,
+                    cut_ready_shows, archived_sales_shows, assigned_sales_shows, update_price_requests,
+                    manage_referrals, notifications, archive_sales_show)
 
 from main.views import (lead_details, auto_fill, edit_lead, delete_lead, add_lead, 
                         upload_sheet, manage_filter_words, delete_filter_word)
@@ -58,7 +59,11 @@ urlpatterns = [
 
     path('notifications/', notifications, name='notifications'),
 
-    path('delete-sales-show/<int:show_id>/', delete_sales_show, name='delete_sales_show'),  # New URL pattern
+    path('archive-sales-show/<int:show_id>/', archive_sales_show, name='archive-sales-show'),  # New URL pattern
+    
     path('cut-ready-shows/', cut_ready_shows, name='cut-ready-shows'),
+
+
+    path('archived-sales-shows/', archived_sales_shows, name='archived-sales-shows'),
 
 ]
