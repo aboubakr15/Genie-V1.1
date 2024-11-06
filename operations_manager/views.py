@@ -182,6 +182,39 @@ def cut_ready_show_into_sales_shows(request, ready_show_id):
     return redirect(request.META.get('HTTP_REFERER', 'operations_manager:ready-shows'))
 
 
+
+def process_all_ready_shows(request, ready_show_ids):
+    """
+    Loops through a list of ready_show_ids and processes each ReadyShow by
+    calling the cut_ready_show_into_sales_shows function.
+
+    Args:
+        request (HttpRequest): The HTTP request object.
+        ready_show_ids (list): List of ReadyShow IDs to be processed.
+    """
+    for ready_show_id in ready_show_ids:
+        cut_ready_show_into_sales_shows(request, ready_show_id)
+        
+
+def cut_ready_shows(request):
+    if request.method == "POST":
+        selected_ready_show_ids = request.POST.getlist('selected_ready_shows')
+        
+        # Ensure there are selected shows
+        if not selected_ready_show_ids:
+            messages.warning(request, "No shows selected.")
+            return redirect('operations_manager:ready-shows')
+
+        # Process each selected ready show
+        process_all_ready_shows(request, selected_ready_show_ids)
+        
+        messages.success(request, "Selected shows have been processed successfully.")
+    else:
+        messages.error(request, "Invalid request method.")
+    
+    return redirect('operations_manager:ready-shows')
+
+
 @user_passes_test(lambda user: is_in_group(user, "operations_manager"))
 def sales_shows_by_label(request, label=None):
     if label not in ['EHUB', 'EHUB2', 'EP']:

@@ -14,47 +14,51 @@
                             <ul class="nav nav-tabs">
                                 <li class="nav-item">
                                     <a class="nav-link {% if active_label == 'EHUB' %}active{% endif %}"
-                                        href="{% url 'operations_manager:ready-shows' 'EHUB' %}">EHUB</a>
+                                       href="{% url 'operations_manager:ready-shows' 'EHUB' %}">EHUB</a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link {% if active_label == 'EHUB2' %}active{% endif %}"
-                                        href="{% url 'operations_manager:ready-shows' 'EHUB2' %}">EHUB2</a>
+                                       href="{% url 'operations_manager:ready-shows' 'EHUB2' %}">EHUB2</a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link {% if active_label == 'EP' %}active{% endif %}"
-                                        href="{% url 'operations_manager:ready-shows' 'EP' %}">EP</a>
+                                       href="{% url 'operations_manager:ready-shows' 'EP' %}">EP</a>
                                 </li>
                             </ul>
 
                             {% if ready_shows %}
-                            <table class="table table-bordered mt-3">
-                                <thead>
-                                    <tr>
-                                        <th scope="col">Sheet Name</th>
-                                        <th scope="col">Done Date</th>
-                                        <th scope="col">Leads Count</th>
-                                        <th scope="col">New Leads</th>
-                                        <th scope="col">(EST, CEN, PAC)</th>
-                                        <th scope="col">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for ready_show in ready_shows %}
-                                    <tr>
-                                        <td>{{ ready_show.sheet.name }}</td>
-                                        <td>{{ ready_show.sheet.done_date }}</td>
-                                        <td>{{ ready_show.leads.count }}</td>
-                                        <td>
-                                            <form method="post"
-                                                action="{% url 'operations_manager:cut-ready-show' ready_show.id %}">
-                                                {% csrf_token %}
-                                                <button type="submit" class="btn btn-success">Cut Show</button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                            <form method="post" action="{% url 'operations_manager:cut-ready-shows' %}">
+
+                                <button type="submit" class="btn btn-primary" style="margin-top: 20px;">Cut Selected Shows</button>
+
+                                {% csrf_token %}
+                                <table class="table table-bordered mt-3">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col"><input type="checkbox" id="select-all"></th>
+                                            <th scope="col">Sheet Name</th>
+                                            <th scope="col">Done Date</th>
+                                            <th scope="col">Leads Count</th>
+                                            <th scope="col">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for ready_show in ready_shows %}
+                                        <tr>
+                                            <td>
+                                                <input type="checkbox" name="selected_ready_shows" value="{{ ready_show.id }}">
+                                            </td>
+                                            <td>{{ ready_show.sheet.name }}</td>
+                                            <td>{{ ready_show.sheet.done_date }}</td>
+                                            <td>{{ ready_show.leads.count }}</td>
+                                            <td>
+                                                <a href="{% url 'operations_manager:cut-ready-show' ready_show.id %}" class="btn btn-success">Cut Show</a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </form>
                             {% else %}
                             <p>No Ready Shows available.</p>
                             {% endif %}
@@ -109,26 +113,13 @@
     </div>
 
     <script>
-        function setActiveTab(tab) {
-            localStorage.setItem('activeTab', tab);
-        }
-
-        // On page load, set the active tab based on stored value
-        window.onload = function() {
-            const activeTab = localStorage.getItem('activeTab');
-            if (activeTab) {
-                // Remove 'active' class from all tabs
-                document.querySelectorAll('.nav-link').forEach(link => {
-                    link.classList.remove('active');
-                });
-                // Set the active class for the stored tab
-                const activeLink = document.querySelector(`.nav-link[href*="${activeTab}"]`);
-                if (activeLink) {
-                    activeLink.classList.add('active');
-                }
+        // Select/Deselect all checkboxes
+        document.getElementById('select-all').onclick = function() {
+            var checkboxes = document.getElementsByName('selected_ready_shows');
+            for (var checkbox of checkboxes) {
+                checkbox.checked = this.checked;
             }
-        };
+        }
     </script>
-
 </main>
 {% endblock %}

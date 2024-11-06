@@ -10,7 +10,7 @@ from django.contrib.auth.decorators import user_passes_test
 from django.utils import timezone
 from django.db import models 
 from django.db.models import Q, Count, Sum
-import openpyxl, os, logging
+import os, logging
 from datetime import datetime
 
 logger = logging.getLogger('custom')
