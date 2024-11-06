@@ -186,7 +186,7 @@ def manage_sheets(request):
         sheets = sheets.filter(
             Q(name__icontains=q)
         )
-    paginator=Paginator(sheets, 20)
+    paginator=Paginator(sheets, 50)
 
 
     page_num = request.GET.get("page", '')
@@ -299,13 +299,22 @@ def cut_sheet_into_ready_show(request, sheet_id):
             logger.error(f"Failed to create notification for user {user.username}: {e}")
 
     # Define the hardcoded save path for the Excel file
-    save_path = os.path.join("//IBH/Inbound/Mails", f"{sheet.name}")
+    save_path = os.path.join("F:\Projects\IBH\DataBase-Project\emails", f"{sheet.name}")
 
     # Save the Excel workbook to the specified path
     workbook.save(save_path)
 
     return redirect('administrator:manage-sheets')
 
+
+def cut_multiple_sheets(request):
+    if request.method == "POST":
+        selected_sheets = request.POST.getlist('selected_sheets')
+        for sheet_id in selected_sheets:
+            # Call your `cut_sheet_into_ready_show` function for each selected sheet
+            cut_sheet_into_ready_show(request, sheet_id)
+
+    return redirect('administrator:manage-sheets')
 
 
 @user_passes_test(lambda user: is_in_group(user, "administrator"))

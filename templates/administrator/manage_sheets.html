@@ -19,40 +19,47 @@
 
                             <h5 class="card-title mt-4">All Sheets</h5>
                             {% if page_obj %}
-                            <table class="table table-bordered">
-                                <thead>
-                                    <tr>
-                                        <th scope="col">Name</th>
-                                        <th scope="col">Done By</th>
-                                        <th scope="col">Number of Leads</th>
-                                        <th scope="col">Done Date</th>
-                                        <th scope="col">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for sheet in page_obj %}
-                                    <tr>
-                                        <td>{{ sheet.name }}</td>
-                                        <td>
-                                            {% if sheet.user %}
-                                            {{ sheet.user.username }}
-                                            {% else %}
-                                            Unknown
-                                            {% endif %}
-                                        </td>
-                                        <td>{{ sheet.leads.count }}</td>
-                                        <td>{{ sheet.created_at|date:"d-m-Y H:i" }}</td>
-                                        <td>
-                                            <form method="post"
-                                                action="{% url 'administrator:cut-sheet' sheet.id %}">
-                                                {% csrf_token %}
-                                                <button class="btn btn-success" type="submit">Cut Sheet</button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+
+                            <!-- Form to process selected sheets -->
+                            <form method="post" action="{% url 'administrator:cut-multiple-sheets' %}">
+                                {% csrf_token %}
+
+                                <!-- Button to cut all selected sheets at once, placed above the table -->
+                                <button class="btn btn-primary mb-2" type="submit">Cut Selected Sheets</button>
+
+
+
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col"><input type="checkbox" id="select_all"></th>
+                                            <th scope="col">Name</th>
+                                            <th scope="col">Done By</th>
+                                            <th scope="col">Number of Leads</th>
+                                            <th scope="col">Done Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for sheet in page_obj %}
+                                        <tr>
+                                            <!-- Checkbox to select each sheet -->
+                                            <td><input type="checkbox" name="selected_sheets" value="{{ sheet.id }}">
+                                            </td>
+                                            <td>{{ sheet.name }}</td>
+                                            <td>
+                                                {% if sheet.user %}
+                                                {{ sheet.user.username }}
+                                                {% else %}
+                                                Unknown
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ sheet.leads.count }}</td>
+                                            <td>{{ sheet.created_at|date:"d-m-Y H:i" }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </form>
 
                             <!-- Pagination controls -->
                             {% if page_obj.has_other_pages %}
@@ -113,4 +120,14 @@
         </section>
     </div>
 </main>
+
+<script>
+    // JavaScript to select/deselect all checkboxes
+    document.getElementById('select_all').onclick = function () {
+        var checkboxes = document.querySelectorAll('input[name="selected_sheets"]');
+        for (var checkbox of checkboxes) {
+            checkbox.checked = this.checked;
+        }
+    }
+</script>
 {% endblock content %}

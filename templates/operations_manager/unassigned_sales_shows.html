@@ -19,24 +19,39 @@
             </li>
         </ul>
 
-        <!-- Updated Sales Shows Table -->
         {% if unassigned_shows %}
+        <!-- Form for assigning multiple shows -->
         <form method="POST" action="{% url 'operations_manager:assign_sales_show' %}">
             {% csrf_token %}
+
+            <!-- Assign Selected Button at the top -->
+            <div class="d-flex justify-content-end mt-3">
+                <select name="agent_id" class="form-select w-auto me-2" required>
+                    <option value="">Select Agent</option>
+                    {% for agent in sales_agents %}
+                    <option value="{{ agent.id }}">{{ agent.username }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-primary">Assign Selected</button>
+            </div>
+
             <table class="table table-bordered mt-3">
                 <thead>
                     <tr>
+                        <th scope="col">Select</th>
                         <th scope="col">Show Name</th>
                         <th scope="col">Leads Count</th>
                         <th scope="col">New Leads</th>
-                        <th scope="col">(EST, CEN, PAC)</th> <!-- New column header for time zones -->
-                        <th scope="col">Action</th>
+                        <th scope="col">(EST, CEN, PAC)</th>
                         <th scope="col">Remove</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for show in unassigned_shows %}
                     <tr>
+                        <td>
+                            <input type="checkbox" name="selected_shows" value="{{ show.id }}">
+                        </td>
                         <td>
                             <a href="{% url 'operations_manager:show-detail' show.id %}" class="btn btn-primary">
                                 {{ show.name }}
@@ -46,25 +61,15 @@
                         <td>{{ blue_red_leads_counts|get_item:show.id|default:0 }}</td>
                         <td>
                             {% with counts=timezone_counts|get_item:show.id %}
-                                ({{ counts.est|default:0 }}, {{ counts.cen|default:0 }}, {{ counts.pac|default:0 }})
+                            ({{ counts.est|default:0 }}, {{ counts.cen|default:0 }}, {{ counts.pac|default:0 }})
                             {% endwith %}
                         </td>
                         <td>
-                            <select name="agent_id_{{ show.id }}" class="form-select">
-                                <option value="">Select Agent</option>
-                                {% for agent in sales_agents %}
-                                <option value="{{ agent.id }}">{{ agent.username }}</option>
-                                {% endfor %}
-                            </select>
-                            <button type="submit" class="btn btn-primary mt-2" name="assign_show_id"
-                                value="{{ show.id }}">
-                                Assign
-                            </button>
-                        </td>
-                        <td>
-                            <form method="POST" action="{% url 'operations_manager:delete_sales_show' show.id %}" style="display:inline;">
+                            <form method="POST" action="{% url 'operations_manager:delete_sales_show' show.id %}"
+                                style="display:inline;">
                                 {% csrf_token %}
-                                <input type="hidden" name="active_label" value="{{ active_label }}">  <!-- Include active label -->
+                                <input type="hidden" name="active_label" value="{{ active_label }}">
+                                <!-- Include active label -->
                                 <button type="submit" class="btn btn-danger btn-sm">Delete</button>
                             </form>
                         </td>
@@ -80,10 +85,13 @@
             <ul class="pagination justify-content-center">
                 {% if unassigned_shows.has_previous %}
                 <li class="page-item">
-                    <a class="page-link" href="?page=1{% if active_label %}&label={{ active_label }}{% endif %}">&laquo; First</a>
+                    <a class="page-link" href="?page=1{% if active_label %}&label={{ active_label }}{% endif %}">&laquo;
+                        First</a>
                 </li>
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ unassigned_shows.previous_page_number }}{% if active_label %}&label={{ active_label }}{% endif %}">&lsaquo; Previous</a>
+                    <a class="page-link"
+                        href="?page={{ unassigned_shows.previous_page_number }}{% if active_label %}&label={{ active_label }}{% endif %}">&lsaquo;
+                        Previous</a>
                 </li>
                 {% else %}
                 <li class="page-item disabled">
@@ -95,15 +103,20 @@
                 {% endif %}
 
                 <li class="page-item disabled">
-                    <span class="page-link">Page {{ unassigned_shows.number }} of {{ unassigned_shows.paginator.num_pages }}</span>
+                    <span class="page-link">Page {{ unassigned_shows.number }} of {{
+                        unassigned_shows.paginator.num_pages }}</span>
                 </li>
 
                 {% if unassigned_shows.has_next %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ unassigned_shows.next_page_number }}{% if active_label %}&label={{ active_label }}{% endif %}">Next &rsaquo;</a>
+                    <a class="page-link"
+                        href="?page={{ unassigned_shows.next_page_number }}{% if active_label %}&label={{ active_label }}{% endif %}">Next
+                        &rsaquo;</a>
                 </li>
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ unassigned_shows.paginator.num_pages }}{% if active_label %}&label={{ active_label }}{% endif %}">Last &raquo;</a>
+                    <a class="page-link"
+                        href="?page={{ unassigned_shows.paginator.num_pages }}{% if active_label %}&label={{ active_label }}{% endif %}">Last
+                        &raquo;</a>
                 </li>
                 {% else %}
                 <li class="page-item disabled">

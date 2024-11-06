@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import (add_user , delete_user, edit_user, index, done_sheets,
-    manage_users, view_logs, cut_sheet_into_ready_show, manage_sheets)
+    manage_users, view_logs, cut_sheet_into_ready_show, manage_sheets, cut_multiple_sheets)
 
 app_name="administrator"
 urlpatterns = [
@@ -13,4 +13,5 @@ urlpatterns = [
     path('manage-sheets/', manage_sheets, name='manage-sheets'),
     path('cut-sheet/<int:sheet_id>/', cut_sheet_into_ready_show, name='cut-sheet'),
     path('sheets-done/', done_sheets, name='sheets-done'),
+    path('cut-multiple-sheets/', cut_multiple_sheets, name='cut-multiple-sheets'),
 ]

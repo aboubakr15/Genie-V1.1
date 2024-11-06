@@ -205,17 +205,19 @@ def sales_shows_by_label(request, label=None):
 @user_passes_test(lambda user: is_in_group(user, "operations_manager"))
 def assign_sales_show(request):
     if request.method == 'POST':
-        show_id = request.POST.get('assign_show_id')
-        show = get_object_or_404(SalesShow, id=show_id)
-
-        # Get the selected agent ID from the form
-        agent_id = request.POST.get(f'agent_id_{show_id}')
+        # Retrieve selected show IDs from the form
+        show_ids = request.POST.getlist('selected_shows')
+        
+        # Get the selected agent ID
+        agent_id = request.POST.get('agent_id')
         if agent_id:
             agent = get_object_or_404(User, id=agent_id)
 
-            # Assign the selected agent to the show
-            show.Agent = agent
-            show.save()
+            # Loop over each selected show and assign the agent
+            for show_id in show_ids:
+                show = get_object_or_404(SalesShow, id=show_id)
+                show.Agent = agent
+                show.save()
 
     return redirect(request.META.get('HTTP_REFERER', 'operations_manager:sales-shows'))
 
@@ -271,41 +273,36 @@ def done_ready_shows(request, label=None):
 def unassigned_sales_shows(request, label='EHUB'):
     # Get unassigned shows based on the label
     unassigned_shows = SalesShow.objects.filter(Agent__isnull=True, label=label).order_by("-id")
-    
+
     # Pagination
-    paginator = Paginator(unassigned_shows, 40)  # Show 10 items per page (you can adjust this)
+    paginator = Paginator(unassigned_shows, 40)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    timezone_counts = {}
-    for show in page_obj:
-        # Count leads based on the time zone
-        est_count = show.leads.filter(time_zone='EST').count()
-        cen_count = show.leads.filter(time_zone='CEN').count()
-        pac_count = show.leads.filter(time_zone='PAC').count()
-
-        # Store counts in dictionary with show ID as the key
-        timezone_counts[show.id] = {
-            'est': est_count,
-            'cen': cen_count,
-            'pac': pac_count,
+    # Create dictionaries for timezone counts and lead colors as before
+    timezone_counts = {
+        show.id: {
+            'est': show.leads.filter(time_zone='EST').count(),
+            'cen': show.leads.filter(time_zone='CEN').count(),
+            'pac': show.leads.filter(time_zone='PAC').count()
         }
+        for show in page_obj
+    }
 
-    # Get sales managers, team leaders, and sales team
-    sales_managers = User.objects.filter(groups__name='sales_manager')
-    team_leader = SalesTeams.objects.values('leader')
-    sales_team = User.objects.filter(Q(groups__name='sales') & Q(id__in=UserLeader.objects.filter(leader_id__in=team_leader).values('user'))).distinct()
-    openers_closers = User.objects.filter(id__in=SalesTeams.objects.values('openers_closers')).distinct()
-    leader_user = User.objects.filter(id__in=team_leader)
-    sales_agents = sales_managers.union(sales_team, leader_user, openers_closers)
+    blue_red_leads_counts = {
+        show.id: LeadsColors.objects.filter(
+            lead__in=show.leads.all(), sheet=show.sheet, color__in=['blue', 'red']
+        ).count()
+        for show in page_obj
+    }
 
-    # Create a dictionary to hold counts of leads with colors
-    blue_red_leads_counts = {}
-    for show in page_obj:
-        blue_red_leads_counts[show.id] = LeadsColors.objects.filter(lead__in=show.leads.all(), sheet=show.sheet, color__in=['blue', 'red']).count()
+    # Prepare list of sales agents
+    sales_agents = User.objects.filter(
+        Q(groups__name__in=['sales_manager', 'sales', 'team_leader'])
+    ).distinct()
 
     context = {
-        'unassigned_shows': page_obj,  # Use paginated queryset
+        'unassigned_shows': page_obj,
         'label': label,
         'sales_agents': sales_agents,
         'active_label': label,
