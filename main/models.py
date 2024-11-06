@@ -115,6 +115,7 @@ class SalesShow(models.Model):
     is_done_rec = models.BooleanField(default=False)   #To mark the show done after the recycle stage
     done_rec_date = models.DateTimeField(null=True, blank=True)
     label = models.CharField(max_length=5, choices=LABEL_CHOICES, default='EHUB')
+    is_archived = models.BooleanField(default=False)       # To Archive the show 
 
     def __str__(self) -> str:
         return self.name
