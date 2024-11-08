@@ -10,7 +10,7 @@ from django.contrib.auth.decorators import user_passes_test
 from django.utils import timezone
 from django.db import models 
 from django.db.models import Q, Count, Sum
-import os, logging
+import os, logging, openpyxl
 from datetime import datetime
 
 logger = logging.getLogger('custom')
@@ -299,7 +299,7 @@ def cut_sheet_into_ready_show(request, sheet_id):
             logger.error(f"Failed to create notification for user {user.username}: {e}")
 
     # Define the hardcoded save path for the Excel file
-    save_path = os.path.join("F:\Projects\IBH\DataBase-Project\emails", f"{sheet.name}")
+    save_path = os.path.join("//IBH/Inbound/Mails", f"{sheet.name}")
 
     # Save the Excel workbook to the specified path
     workbook.save(save_path)

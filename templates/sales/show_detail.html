@@ -114,7 +114,7 @@
                                                         onchange="toggleCbDate(this, {{ lead_detail.lead.id }})">
                                                         <option value="">Select Termination Code</option>
                                                         {% for termination_code in termination_codes %}
-                                                        <option value="{{ termination_code.id }}" {% if lead_detail.lead.leadterminationcode_set.first and lead_detail.lead.leadterminationcode_set.first.flag.id == termination_code.id %} selected {% endif %}>
+                                                        <option value="{{ termination_code.id }}" {% if lead_detail.tc and lead_detail.tc.flag.id == termination_code.id %} selected {% endif %}>
                                                             {{ termination_code.name }}
                                                         </option>
                                                         {% endfor %}
@@ -125,8 +125,8 @@
                                                 <td>
                                                     <input type="date" name="cb_date_{{ lead_detail.lead.id }}"
                                                         class="form-control cb-date"
-                                                        value="{{ lead_detail.lead.leadterminationcode_set.first.CB_date|date:'Y-m-d' }}"
-                                                        {% if not lead_detail.lead.leadterminationcode_set.first or lead_detail.lead.leadterminationcode_set.first.flag.name != 'CB' or lead_detail.lead.leadterminationcode_set.first.flag.name != 'PR' %}disabled{% endif %}>
+                                                        value="{{ lead_detail.tc.CB_date|date:'Y-m-d' }}"
+                                                        {% if not lead_detail.tc or lead_detail.tc.flag.name != 'CB' or lead_detail.tc.flag.name != 'PR' %}disabled{% endif %}>
                                                 </td>
 
                                                 <!-- Notes Column -->

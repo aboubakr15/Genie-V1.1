@@ -17,6 +17,7 @@
                             <th>CB Date</th>
                             <th>Notes</th>
                             <th>Show(s)</th>
+                            <th>Agent</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -38,6 +39,7 @@
                                 N/A
                                 {% endif %}
                             </td>
+                            <td>{{ history.user|default:"" }}</td>
                         </tr>
                         {% empty %}
                         <tr>

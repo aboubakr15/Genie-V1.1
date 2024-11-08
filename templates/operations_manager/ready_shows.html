@@ -39,7 +39,6 @@
                                             <th scope="col">Sheet Name</th>
                                             <th scope="col">Done Date</th>
                                             <th scope="col">Leads Count</th>
-                                            <th scope="col">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -51,9 +50,6 @@
                                             <td>{{ ready_show.sheet.name }}</td>
                                             <td>{{ ready_show.sheet.done_date }}</td>
                                             <td>{{ ready_show.leads.count }}</td>
-                                            <td>
-                                                <a href="{% url 'operations_manager:cut-ready-show' ready_show.id %}" class="btn btn-success">Cut Show</a>
-                                            </td>
                                         </tr>
                                         {% endfor %}
                                     </tbody>

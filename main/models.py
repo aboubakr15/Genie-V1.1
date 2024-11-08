@@ -150,6 +150,10 @@ class LeadTerminationCode(models.Model):
     num_rooms = models.PositiveIntegerField(null=True, blank=True)
     num_nights = models.PositiveIntegerField(null=True, blank=True)
     options = models.TextField(null=True, blank=True)
+   
+    class Meta:
+        unique_together = ('lead', 'sales_show', 'flag')
+
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
@@ -164,6 +168,7 @@ class OldShow(models.Model):
 
 
 class LeadTerminationHistory(models.Model):
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     entry_date = models.DateTimeField(auto_now_add=True)
     termination_code = models.ForeignKey(TerminationCode, on_delete=models.CASCADE)
     cb_date = models.DateTimeField(null=True)

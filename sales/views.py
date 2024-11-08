@@ -139,6 +139,7 @@ def show_detail(request, show_id, recycle=""):
         contact_names = LeadContactNames.objects.filter(lead=lead, sheet=show.sheet)
         lead_color = LeadsColors.objects.filter(lead=lead, sheet=show.sheet).first()
         lead_notes = LeadTerminationCode.objects.filter(lead=lead, sales_show=show).first()
+        lead_termination_code = LeadTerminationCode.objects.filter(lead=lead, sales_show=show).order_by("id").last()
 
         leads_with_details.append({
             'lead': lead,
@@ -147,6 +148,7 @@ def show_detail(request, show_id, recycle=""):
             'contact_names': contact_names,
             'color': lead_color.color if lead_color else None,
             'notes': lead_notes.notes if lead_notes else '',
+            'tc': lead_termination_code
         })
 
 
@@ -174,6 +176,7 @@ def show_detail(request, show_id, recycle=""):
                 #     continue
 
                 LeadTerminationHistory.objects.create(
+                    user = request.user,
                     termination_code=termination_code,
                     cb_date=cb_date,
                     lead=lead,
