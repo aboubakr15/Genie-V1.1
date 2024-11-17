@@ -177,15 +177,9 @@
 </div>  
 
 <script>
-    $(document).ready(function() {
-        $('#leadsTable').DataTable({
-            "paging": true,
-            "searching": true,
-            "ordering": true,
-            "order": [],
-        });
-
-        $('.add-phone').on('click', function() {
+    $(document).ready(function () {
+        // Function to add phone numbers
+        $('.add-phone').on('click', function () {
             var leadId = $(this).data('lead-id');
             var sheetId = $(this).data('sheet-id');
             var newPhone = $(this).siblings('.new-phone').val();
@@ -197,21 +191,24 @@
                     data: {
                         lead_id: leadId,
                         sheet_id: sheetId,
-                        phone: newPhone,
+                        value: newPhone,  // Change 'phone' to 'value'
                         csrfmiddlewaretoken: '{{ csrf_token }}'
                     },
-                    success: function(response) {
+                    success: function (response) {
                         $('#phone-numbers-display-' + leadId).append('<br>' + newPhone);
-                        $(this).siblings('.new-phone').val('');
+                        $(this).siblings('.new-phone').val(''); // Clear input field
                     }.bind(this),
-                    error: function(xhr) {
+                    error: function (xhr) {
                         alert('Error adding phone number: ' + xhr.responseText);
                     }
                 });
+            } else {
+                alert('Please enter a phone number.');
             }
         });
 
-        $('.add-email').on('click', function() {
+        // Function to add emails
+        $('.add-email').on('click', function () {
             var leadId = $(this).data('lead-id');
             var sheetId = $(this).data('sheet-id');
             var newEmail = $(this).siblings('.new-email').val();
@@ -223,17 +220,19 @@
                     data: {
                         lead_id: leadId,
                         sheet_id: sheetId,
-                        email: newEmail,
+                        value: newEmail,  // Change 'email' to 'value'
                         csrfmiddlewaretoken: '{{ csrf_token }}'
                     },
-                    success: function(response) {
+                    success: function (response) {
                         $('#emails-display-' + leadId).append('<br>' + newEmail);
                         $(this).siblings('.new-email').val('');
                     }.bind(this),
-                    error: function(xhr) {
+                    error: function (xhr) {
                         alert('Error adding email: ' + xhr.responseText);
                     }
                 });
+            } else {
+                alert('Please enter an email address.');
             }
         });
 
@@ -250,7 +249,7 @@
                     data: {
                         lead_id: leadId,
                         sheet_id: sheetId,
-                        contact: newContact,
+                        value: newContact,  // Change 'contact' to 'value'
                         csrfmiddlewaretoken: '{{ csrf_token }}'
                     },
                     success: function (response) {
