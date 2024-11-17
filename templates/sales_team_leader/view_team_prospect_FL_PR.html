@@ -94,13 +94,13 @@
                                         <td>
                                             {{ lead_data.phones|join:"<br/>" }}
                                             <input type="text" class="form-control new-phone mt-2" placeholder="Add Phone">
-                                            <button type="button" class="btn btn-sm btn-primary add-phone" data-lead-id="{{ lead_data.lead.id }}" data-sheet-id="{{ selected_code.id }}">Add</button>
+                                            <button type="button" class="btn btn-sm btn-primary add-phone" data-lead-id="{{ lead_data.lead.id }}" data-sheet-id="{{ lead_data.sales_show.sheet.id }}">Add</button>
                                         </td>
                                         <td>{{ lead_data.timezone }}</td>
                                         <td>
                                             {{ lead_data.emails|join:"<br/>" }}
                                             <input type="text" class="form-control new-email mt-2" placeholder="Add Email">
-                                            <button type="button" class="btn btn-sm btn-primary add-email" data-lead-id="{{ lead_data.lead.id }}" data-sheet-id="{{ selected_code.id }}">Add</button>
+                                            <button type="button" class="btn btn-sm btn-primary add-email" data-lead-id="{{ lead_data.lead.id }}" data-sheet-id="{{ lead_data.sales_show.sheet.id }}">Add</button>
                                         </td>
                                         <td id="contacts-display-{{ lead_data.lead.id }}">
                                             {{ lead_data.contacts|join:"<br />" }}
@@ -108,7 +108,7 @@
                                                 placeholder="Add new contact" />
                                             <button type="button" class="btn btn-sm btn-primary add-contact"
                                                 data-lead-id="{{ lead_data.lead.id }}"
-                                                data-sheet-id="{{ selected_code.id }}">Add</button>
+                                                data-sheet-id="{{ lead_data.sales_show.sheet.id }}">Add</button>
                                         </td>
                                         <td>
                                             <select name="termination_code_{{ lead_data.lead.id }}_{{ lead_data.sales_show_id }}" class="form-control termination-code-select">

@@ -51,7 +51,7 @@
                                         <input type="text" class="new-phone form-control" placeholder="Add new phone" />
                                         <button type="button" class="btn btn-secondary add-phone"
                                             data-lead-id="{{ lead_data.lead.id }}"
-                                            data-sheet-id="{{ selected_code.id }}">Add</button>
+                                            data-sheet-id="{{ lead_data.sales_show.sheet.id }}">Add</button>
                                     </td>
                                     <td>{{ lead_data.timezone }}</td>
                                     <td id="emails-display-{{ lead_data.lead.id }}">
@@ -59,7 +59,7 @@
                                         <input type="text" class="new-email form-control" placeholder="Add new email" />
                                         <button type="button" class="btn btn-secondary add-email"
                                             data-lead-id="{{ lead_data.lead.id }}"
-                                            data-sheet-id="{{ selected_code.id }}">Add</button>
+                                            data-sheet-id="{{ lead_data.sales_show.sheet.id }}">Add</button>
                                     </td>
                                     <td id="contacts-display-{{ lead_data.lead.id }}">
                                         {{ lead_data.contacts|join:"<br />" }}
@@ -67,7 +67,7 @@
                                             placeholder="Add new contact" />
                                         <button type="button" class="btn btn-secondary add-contact"
                                             data-lead-id="{{ lead_data.lead.id }}"
-                                            data-sheet-id="{{ selected_code.id }}">Add</button>
+                                            data-sheet-id="{{ lead_data.sales_show.sheet.id }}">Add</button>
                                     </td>
 
                                     <!-- Termination Code Dropdown -->
