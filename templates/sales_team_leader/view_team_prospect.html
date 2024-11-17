@@ -36,7 +36,7 @@
                                     <th>Phone No.</th>
                                     <th>Time Zone</th>
                                     <th>E-mail</th>
-                                    <th>Contact Names</th>
+                                    <th>DM Names</th>
                                     <th>Termination Code</th>
                                     <th>CB Date</th>
                                     <th>Agent</th>
@@ -144,7 +144,7 @@
                     data: {
                         lead_id: leadId,
                         sheet_id: sheetId,
-                        phone: newPhone,
+                        value: newPhone,  // Change 'phone' to 'value'
                         csrfmiddlewaretoken: '{{ csrf_token }}'
                     },
                     success: function (response) {
@@ -173,7 +173,7 @@
                     data: {
                         lead_id: leadId,
                         sheet_id: sheetId,
-                        email: newEmail,
+                        value: newEmail,  // Change 'email' to 'value'
                         csrfmiddlewaretoken: '{{ csrf_token }}'
                     },
                     success: function (response) {
@@ -202,7 +202,7 @@
                     data: {
                         lead_id: leadId,
                         sheet_id: sheetId,
-                        contact: newContact,
+                        value: newContact,  // Change 'contact' to 'value'
                         csrfmiddlewaretoken: '{{ csrf_token }}'
                     },
                     success: function (response) {

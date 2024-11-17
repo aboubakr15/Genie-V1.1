@@ -374,8 +374,12 @@ def search(request):
 
         leads_by_phone = Lead.objects.filter(id__in=phone_numbers.values('lead_id')).distinct()
 
+        # Search by show name
+        shows_by_name = SalesShow.objects.filter(name__icontains=query, Agent__isnull=False)
+        leads_by_show_name = Lead.objects.filter(sales_shows__in=shows_by_name).distinct()
+
         # Combine leads found by name and phone number
-        all_leads = leads_by_name.union(leads_by_phone)
+        all_leads = leads_by_name.union(leads_by_phone, leads_by_show_name)
 
     # Create a list of tuples (lead, show) for each lead's associated shows
     for lead in all_leads:

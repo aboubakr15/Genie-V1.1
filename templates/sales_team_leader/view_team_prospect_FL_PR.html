@@ -71,8 +71,9 @@
                                         <th>Qualified</th>
                                         {% endif %}
                                         <th>Phone No.</th>
-                                        <th>E-mail</th>
                                         <th>Time Zone</th>
+                                        <th>E-mail</th>
+                                        <th>DM Names</th>
                                         <th>Termination Code</th>
                                         <th>CB Date</th>
                                         <th>Status</th>
@@ -95,12 +96,20 @@
                                             <input type="text" class="form-control new-phone mt-2" placeholder="Add Phone">
                                             <button type="button" class="btn btn-sm btn-primary add-phone" data-lead-id="{{ lead_data.lead.id }}" data-sheet-id="{{ selected_code.id }}">Add</button>
                                         </td>
+                                        <td>{{ lead_data.timezone }}</td>
                                         <td>
                                             {{ lead_data.emails|join:"<br/>" }}
                                             <input type="text" class="form-control new-email mt-2" placeholder="Add Email">
                                             <button type="button" class="btn btn-sm btn-primary add-email" data-lead-id="{{ lead_data.lead.id }}" data-sheet-id="{{ selected_code.id }}">Add</button>
                                         </td>
-                                        <td>{{ lead_data.timezone }}</td>
+                                        <td id="contacts-display-{{ lead_data.lead.id }}">
+                                            {{ lead_data.contacts|join:"<br />" }}
+                                            <input type="text" class="new-contact form-control"
+                                                placeholder="Add new contact" />
+                                            <button type="button" class="btn btn-sm btn-primary add-contact"
+                                                data-lead-id="{{ lead_data.lead.id }}"
+                                                data-sheet-id="{{ selected_code.id }}">Add</button>
+                                        </td>
                                         <td>
                                             <select name="termination_code_{{ lead_data.lead.id }}_{{ lead_data.sales_show_id }}" class="form-control termination-code-select">
                                                 {% for code in termination_codes_selection %}
@@ -225,6 +234,35 @@
                         alert('Error adding email: ' + xhr.responseText);
                     }
                 });
+            }
+        });
+
+        // Function to add contact names
+        $('.add-contact').on('click', function () {
+            var leadId = $(this).data('lead-id');
+            var sheetId = $(this).data('sheet-id');
+            var newContact = $(this).siblings('.new-contact').val();
+
+            if (newContact) {
+                $.ajax({
+                    url: '{% url "api:add_contact_name" %}',
+                    method: 'POST',
+                    data: {
+                        lead_id: leadId,
+                        sheet_id: sheetId,
+                        contact: newContact,
+                        csrfmiddlewaretoken: '{{ csrf_token }}'
+                    },
+                    success: function (response) {
+                        $('#contacts-display-' + leadId).append('<br>' + newContact);
+                        $(this).siblings('.new-contact').val('');
+                    }.bind(this),
+                    error: function (xhr) {
+                        alert('Error adding contact name: ' + xhr.responseText);
+                    }
+                });
+            } else {
+                alert('Please enter a contact name.');
             }
         });
     });

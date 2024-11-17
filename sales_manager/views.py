@@ -275,7 +275,6 @@ def search(request):
     # Get all leads that have associated sales shows where Agent is not null
     all_leads = Lead.objects.filter(sales_shows__Agent__isnull=False).distinct()
 
-    # Filter leads based on the search query (by name or phone number)
     if query:
         # Search by lead name
         leads_by_name = all_leads.filter(name__icontains=query).distinct()
@@ -284,8 +283,12 @@ def search(request):
         phone_numbers = LeadPhoneNumbers.objects.filter(value__icontains=query)
         leads_by_phone = Lead.objects.filter(id__in=phone_numbers.values('lead_id')).distinct()
 
-        # Combine leads found by name and phone number
-        all_leads = leads_by_name.union(leads_by_phone)
+        # Search by show name
+        shows_by_name = SalesShow.objects.filter(name__icontains=query, Agent__isnull=False)
+        leads_by_show_name = Lead.objects.filter(sales_shows__in=shows_by_name).distinct()
+
+        # Combine results from name, phone number, and show name searches
+        all_leads = leads_by_name.union(leads_by_phone, leads_by_show_name)
 
     # Create a list of tuples (lead, show) for each lead's associated shows where Agent is not null
     for lead in all_leads:
