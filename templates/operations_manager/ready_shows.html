@@ -26,6 +26,15 @@
                                 </li>
                             </ul>
 
+                            <!-- Search Bar -->
+                            <form method="get" action="{% url 'operations_manager:ready-shows' active_label %}" class="my-3">
+                                <div class="input-group">
+                                    <input type="text" name="search" class="form-control" placeholder="Search by Sheet Name"
+                                           value="{{ search_query }}" aria-label="Search">
+                                    <button type="submit" class="btn btn-primary">Search</button>
+                                </div>
+                            </form>
+
                             {% if ready_shows %}
                             <form method="post" action="{% url 'operations_manager:cut-ready-shows' %}">
 
@@ -65,10 +74,10 @@
                                 <ul class="pagination justify-content-center">
                                     {% if ready_shows.has_previous %}
                                     <li class="page-item">
-                                        <a class="page-link" href="?page=1{% if active_label %}&label={{ active_label }}{% endif %}">&laquo; First</a>
+                                        <a class="page-link" href="?page=1&search={{ search_query }}">&laquo; First</a>
                                     </li>
                                     <li class="page-item">
-                                        <a class="page-link" href="?page={{ ready_shows.previous_page_number }}{% if active_label %}&label={{ active_label }}{% endif %}">&lsaquo; Previous</a>
+                                        <a class="page-link" href="?page={{ ready_shows.previous_page_number }}&search={{ search_query }}">&lsaquo; Previous</a>
                                     </li>
                                     {% else %}
                                     <li class="page-item disabled">
@@ -85,10 +94,10 @@
 
                                     {% if ready_shows.has_next %}
                                     <li class="page-item">
-                                        <a class="page-link" href="?page={{ ready_shows.next_page_number }}{% if active_label %}&label={{ active_label }}{% endif %}">Next &rsaquo;</a>
+                                        <a class="page-link" href="?page={{ ready_shows.next_page_number }}&search={{ search_query }}">Next &rsaquo;</a>
                                     </li>
                                     <li class="page-item">
-                                        <a class="page-link" href="?page={{ ready_shows.paginator.num_pages }}{% if active_label %}&label={{ active_label }}{% endif %}">Last &raquo;</a>
+                                        <a class="page-link" href="?page={{ ready_shows.paginator.num_pages }}&search={{ search_query }}">Last &raquo;</a>
                                     </li>
                                     {% else %}
                                     <li class="page-item disabled">

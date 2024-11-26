@@ -19,6 +19,15 @@
             </li>
         </ul>
 
+        <!-- Search form -->
+        <form method="GET" class="mt-3 mb-3">
+            <div class="input-group">
+                <input type="text" name="search" class="form-control" placeholder="Search Sales Shows" 
+                       value="{{ search_term }}">
+                <button class="btn btn-primary" type="submit">Search</button>
+            </div>
+        </form>
+
         {% if unassigned_shows %}
         <!-- Form for assigning multiple shows -->
         <form method="POST" action="{% url 'operations_manager:assign_sales_show' %}">
@@ -68,7 +77,7 @@
                             <form method="POST" action="{% url 'operations_manager:archive-sales-show' show.id %}"
                                 style="display:inline;">
                                 {% csrf_token %}
-                                <input type="hidden" name="active_label" value="{{ active_label }}"> <!-- Include active label -->
+                                <input type="hidden" name="active_label" value="{{ active_label }}">
                                 <button type="submit" class="btn btn-danger btn-sm">Archive</button>
                             </form>
                         </td>

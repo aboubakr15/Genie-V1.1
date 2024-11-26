@@ -169,7 +169,7 @@ def view_team_prospect(request, code_id=None, leader_id=None):
             leader.id
         )
 
-    leads = LeadTerminationCode.objects.filter(user__in=team_members, flag=code).order_by('-id')
+    leads = LeadTerminationCode.objects.filter(user__in=team_members, flag=code).order_by('-entry_date')
     team_name = SalesTeams.objects.filter(leader=leader).first().label
 
 
@@ -216,6 +216,7 @@ def view_team_prospect(request, code_id=None, leader_id=None):
                 ):
                 # Create a new history record if either field has changed
                 LeadTerminationHistory.objects.create(
+                    user=request.user,
                     termination_code=new_code,
                     cb_date=cb_date,
                     lead=lead_termination.lead,

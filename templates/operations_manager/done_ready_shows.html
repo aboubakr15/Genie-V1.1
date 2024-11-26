@@ -10,21 +10,32 @@
                         <div class="card-body">
                             <h5 class="card-title">Done Ready Shows</h5>
 
+                            <!-- Tabs for filtering by label -->
                             <ul class="nav nav-tabs">
                                 <li class="nav-item">
                                     <a class="nav-link {% if active_label == 'EHUB' %}active{% endif %}"
-                                        href="{% url 'operations_manager:done-ready-shows' 'EHUB' %}">EHUB</a>
+                                       href="{% url 'operations_manager:done-ready-shows' 'EHUB' %}">EHUB</a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link {% if active_label == 'EHUB2' %}active{% endif %}"
-                                        href="{% url 'operations_manager:done-ready-shows' 'EHUB2' %}">EHUB2</a>
+                                       href="{% url 'operations_manager:done-ready-shows' 'EHUB2' %}">EHUB2</a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link {% if active_label == 'EP' %}active{% endif %}"
-                                        href="{% url 'operations_manager:done-ready-shows' 'EP' %}">EP</a>
+                                       href="{% url 'operations_manager:done-ready-shows' 'EP' %}">EP</a>
                                 </li>
                             </ul>
 
+                            <!-- Search Bar -->
+                            <form method="GET" class="mt-3 mb-3">
+                                <div class="input-group">
+                                    <input type="text" name="search" class="form-control" placeholder="Search by sheet name"
+                                           value="{{ search_query }}">
+                                    <button type="submit" class="btn btn-primary">Search</button>
+                                </div>
+                            </form>
+
+                            <!-- Display Done Ready Shows -->
                             {% if done_shows %}
                             <table class="table table-bordered mt-3">
                                 <thead>
@@ -54,10 +65,10 @@
                                 <ul class="pagination justify-content-center">
                                     {% if done_shows.has_previous %}
                                     <li class="page-item">
-                                        <a class="page-link" href="?page=1{% if active_label %}&label={{ active_label }}{% endif %}">&laquo; First</a>
+                                        <a class="page-link" href="?page=1&search={{ search_query }}&label={{ active_label }}">&laquo; First</a>
                                     </li>
                                     <li class="page-item">
-                                        <a class="page-link" href="?page={{ done_shows.previous_page_number }}{% if active_label %}&label={{ active_label }}{% endif %}">&lsaquo; Previous</a>
+                                        <a class="page-link" href="?page={{ done_shows.previous_page_number }}&search={{ search_query }}&label={{ active_label }}">&lsaquo; Previous</a>
                                     </li>
                                     {% else %}
                                     <li class="page-item disabled">
@@ -74,10 +85,10 @@
 
                                     {% if done_shows.has_next %}
                                     <li class="page-item">
-                                        <a class="page-link" href="?page={{ done_shows.next_page_number }}{% if active_label %}&label={{ active_label }}{% endif %}">Next &rsaquo;</a>
+                                        <a class="page-link" href="?page={{ done_shows.next_page_number }}&search={{ search_query }}&label={{ active_label }}">Next &rsaquo;</a>
                                     </li>
                                     <li class="page-item">
-                                        <a class="page-link" href="?page={{ done_shows.paginator.num_pages }}{% if active_label %}&label={{ active_label }}{% endif %}">Last &raquo;</a>
+                                        <a class="page-link" href="?page={{ done_shows.paginator.num_pages }}&search={{ search_query }}&label={{ active_label }}">Last &raquo;</a>
                                     </li>
                                     {% else %}
                                     <li class="page-item disabled">

@@ -12,6 +12,7 @@ import logging
 from django.db.models import OuterRef, Subquery, Q
 from django.utils import timezone
 from .forms import PriceRequestForm
+from django.http import HttpResponseRedirect
 
 
 logger = logging.getLogger('custom')
@@ -261,21 +262,30 @@ def ready_shows_view(request, label=None):
     if label not in ['EHUB', 'EHUB2', 'EP']:
         label = 'EHUB'
 
-    # Filter ReadyShows based on the label
-    ready_shows = ReadyShow.objects.filter(label=label, is_done=False).order_by("-id")
+    # Get search query
+    search_query = request.GET.get('search', '')
+
+    # Filter ReadyShows based on the label and search query
+    ready_shows = ReadyShow.objects.filter(
+        label=label,
+        is_done=False,
+        sheet__name__icontains=search_query  # Filter by sheet name
+    ).order_by("-id")
 
     # Pagination
-    paginator = Paginator(ready_shows, 30)  # Show 10 items per page (you can adjust thiss)
+    paginator = Paginator(ready_shows, 30)  # Show 30 items per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # Pass the active label and paginated queryset to the template
+    # Pass the active label, paginated queryset, and search query to the template
     context = {
         'ready_shows': page_obj,  # Use paginated queryset
         'active_label': label,
+        'search_query': search_query,  # Pass search query for use in the template
     }
 
     return render(request, 'operations_manager/ready_shows.html', context)
+
 
 
 @user_passes_test(lambda user: is_in_group(user, "operations_manager"))
@@ -283,19 +293,29 @@ def done_ready_shows(request, label=None):
     # Default label if not passed
     if label not in ['EHUB', 'EHUB2', 'EP']:
         label = 'EHUB'
+
+    # Get the search query from the request
+    search_query = request.GET.get('search', '')
+
+    # Filter Done ReadyShows based on the label and search query
+    done_shows = ReadyShow.objects.filter(label=label, is_done=True)
     
-    # Filter Done ReadyShows based on the label
-    done_shows = ReadyShow.objects.filter(label=label, is_done=True).order_by("-id")
+    # Apply search filtering (for example, searching by sheet name or lead count)
+    if search_query:
+        done_shows = done_shows.filter(Q(sheet__name__icontains=search_query)).distinct()
+
+    done_shows = done_shows.order_by("-id")
 
     # Pagination
-    paginator = Paginator(done_shows, 30)  # Show 10 items per page (adjust this number as needed)
+    paginator = Paginator(done_shows, 30)  # Show 30 items per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # Pass the active label and paginated queryset to the template
+    # Pass the active label, paginated queryset, and search query to the template
     context = {
-        'done_shows': page_obj,  # Use paginated queryset
+        'done_shows': page_obj,
         'active_label': label,
+        'search_query': search_query,
     }
 
     return render(request, 'operations_manager/done_ready_shows.html', context)
@@ -304,8 +324,20 @@ def done_ready_shows(request, label=None):
 # View for Unassigned Sales Shows
 @user_passes_test(lambda user: is_in_group(user, "operations_manager"))
 def unassigned_sales_shows(request, label='EHUB'):
-    # Get unassigned shows based on the label
-    unassigned_shows = SalesShow.objects.filter(Agent__isnull=True, label=label, is_archived=False).order_by("-id")
+    # Get the search term from the request
+    search_term = request.GET.get('search', '')
+
+    # Filter unassigned shows based on the label and search term
+    unassigned_shows = SalesShow.objects.filter(
+        Agent__isnull=True, label=label, is_archived=False
+    )
+
+    if search_term:
+        unassigned_shows = unassigned_shows.filter(
+            Q(name__icontains=search_term)  # Adjust 'name' to the relevant field(s)
+        )
+
+    unassigned_shows = unassigned_shows.order_by("-id")
 
     # Pagination
     paginator = Paginator(unassigned_shows, 40)
@@ -341,6 +373,7 @@ def unassigned_sales_shows(request, label='EHUB'):
         'active_label': label,
         'blue_red_leads_counts': blue_red_leads_counts,
         'timezone_counts': timezone_counts,
+        'search_term': search_term,
     }
 
     return render(request, 'operations_manager/unassigned_sales_shows.html', context)
@@ -349,11 +382,22 @@ def unassigned_sales_shows(request, label='EHUB'):
 # View for Assigned Sales Shows
 @user_passes_test(lambda user: is_in_group(user, "operations_manager"))
 def assigned_sales_shows(request, label='EHUB'):
-    assigned_shows = SalesShow.objects.filter(Agent__isnull=False, label=label).order_by("-id")
+    # Get the search term from the request
+    search_query = request.GET.get('search', '')
+
+    # Filter assigned shows based on label and search query
+    assigned_shows = SalesShow.objects.filter(
+        Agent__isnull=False,
+        label=label
+    ).filter(
+        Q(name__icontains=search_query) | Q(Agent__username__icontains=search_query)
+    ).order_by("-id")
+
     context = {
         'assigned_shows': assigned_shows,
         'label': label,
         'active_label': label,
+        'search_query': search_query,
     }
     return render(request, 'operations_manager/assigned_sales_shows.html', context)
 
@@ -374,6 +418,7 @@ def view_sales_agents(request):
     return render(request, "operations_manager/view_agents.html", context)
 
 
+# For recycling
 @user_passes_test(lambda user: is_in_group(user, "operations_manager"))
 def view_agent_done_shows(request, agent_id):
     agent = get_object_or_404(User, id=agent_id)
@@ -496,9 +541,11 @@ def archive_sales_show(request, show_id):
         show.is_archived = True
         show.save()  # Save the changes to the database
         
-        # Get the active tab from the request
-        active_label = request.POST.get('active_label', 'EHUB')  # Default to 'EHUB' if not provided
-        return redirect('operations_manager:unassigned-sales-shows', active_label)  # Redirect to the active tab
+        # Get the current URL from the 'HTTP_REFERER' header
+        referer_url = request.META.get('HTTP_REFERER', 'operations_manager:unassigned-sales-shows')
+        
+        # Redirect to the referring URL (where the request came from)
+        return HttpResponseRedirect(referer_url)
 
 
 def archived_sales_shows(request):

@@ -18,6 +18,15 @@
             </li>
         </ul>
 
+        <!-- Search Bar -->
+        <form method="GET" class="mt-3 mb-3">
+            <div class="input-group">
+                <input type="text" name="search" class="form-control" placeholder="Search by show name or agent"
+                       value="{{ search_query }}">
+                <button type="submit" class="btn btn-primary">Search</button>
+            </div>
+        </form>
+
         <!-- Display Sales Shows -->
         {% if assigned_shows %}
         <form method="POST" action="{% url 'operations_manager:assign_sales_show' %}">
@@ -28,6 +37,7 @@
                         <th scope="col">Show Name</th>
                         <th scope="col">Leads Count</th>
                         <th scope="col">Assigned Agent</th>
+                        <th scope="col">Status</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -46,13 +56,20 @@
                             Not Assigned
                             {% endif %}
                         </td>
+                        <td>
+                            {% if show.is_done %}
+                            <span class="badge bg-success">Done</span>
+                            {% else %}
+                            <span class="badge bg-warning text-dark">Not Done</span>
+                            {% endif %}
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </form>
         {% else %}
-        <p>No Sales Shows available for the selected label.</p>
+        <p>No Sales Shows available for the selected label or search query.</p>
         {% endif %}
     </div>
 </main>

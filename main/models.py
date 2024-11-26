@@ -150,7 +150,7 @@ class LeadTerminationCode(models.Model):
     num_rooms = models.PositiveIntegerField(null=True, blank=True)
     num_nights = models.PositiveIntegerField(null=True, blank=True)
     options = models.TextField(null=True, blank=True)
-   
+
     class Meta:
         unique_together = ('lead', 'sales_show', 'flag')
 
