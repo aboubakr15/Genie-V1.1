@@ -391,7 +391,7 @@ def assigned_sales_shows(request, label='EHUB'):
         is_archived=False
     ).filter(
         Q(name__icontains=search_query) | Q(Agent__username__icontains=search_query)
-    ).order_by("-id")
+    ).order_by("is_done", "-id")
 
     context = {
         'assigned_shows': assigned_shows,
