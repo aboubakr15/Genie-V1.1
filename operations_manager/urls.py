@@ -4,7 +4,7 @@ from .views import (assign_lead_to_leader, done_ready_shows, index, manage_leads
 
 from .views import (assign_sales_show, ready_shows_view, cut_ready_show_into_sales_shows, price_requests_view,
                     cut_ready_shows, archived_sales_shows, assigned_sales_shows, update_price_requests,
-                    manage_referrals, notifications, archive_sales_show)
+                    manage_referrals, notifications, archive_sales_show, unarchive_sales_show)
 
 from main.views import (lead_details, auto_fill, edit_lead, delete_lead, add_lead, 
                         upload_sheet, manage_filter_words, delete_filter_word)
@@ -63,6 +63,7 @@ urlpatterns = [
     
     path('cut-ready-shows/', cut_ready_shows, name='cut-ready-shows'),
 
+    path('unarchive/<int:show_id>/', unarchive_sales_show, name='unarchive-sales-show'),
 
     path('archived-sales-shows/', archived_sales_shows, name='archived-sales-shows'),
 

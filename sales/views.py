@@ -92,7 +92,7 @@ def index(request):
 @user_passes_test(lambda user: user.groups.filter(name__in=["sales", "sales_team_leader", "sales_manager"]).exists())
 def agent_assigned_shows(request):
     # Fetch the SalesShows assigned to the logged-in user
-    assigned_shows = SalesShow.objects.filter(Agent=request.user, is_done=False, is_recycled=False).order_by('-id')
+    assigned_shows = SalesShow.objects.filter(Agent=request.user, is_done=False, is_recycled=False, is_archived=False).order_by('-id')
 
     group_name = request.user.groups.first().name
     context = {

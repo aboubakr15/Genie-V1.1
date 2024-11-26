@@ -2,7 +2,7 @@
 
 {% block content %}
 <main>
-    <div class="container-fluid"> <!-- Make container fluid for full-width responsiveness -->
+    <div class="container-fluid">
         <section class="section">
             <div class="row">
                 <div class="col-lg-12">
@@ -11,12 +11,11 @@
                             <h5 class="card-title">Archived Sales Shows</h5>
 
                             {% if page_obj.object_list %}
-                            <div class="table-responsive"> <!-- Ensure the table is responsive -->
+                            <div class="table-responsive">
                                 <table class="table table-bordered mt-3">
                                     <thead>
                                         <tr>
                                             <th scope="col">Show Name</th>
-                                            <th scope="col">Sheet Name</th>
                                             <th scope="col">Leads Count</th>
                                             <th scope="col">Actions</th>
                                         </tr>
@@ -25,17 +24,21 @@
                                         {% for show in page_obj.object_list %}
                                         <tr>
                                             <td>{{ show.name }}</td>
-                                            <td>{{ show.sheet.name }}</td>
                                             <td>{{ show.leads.count }}</td>
                                             <td>
-                                                <!-- Actions, e.g., Recycle or View -->
                                                 <a href="{% url 'operations_manager:show-detail' show.id %}" class="btn btn-info">View</a>
+                                                
+                                                <!-- Button to unarchive the show -->
+                                                <form method="POST" action="{% url 'operations_manager:unarchive-sales-show' show.id %}" style="display:inline;">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-warning">Unarchive</button>
+                                                </form>
                                             </td>
                                         </tr>
                                         {% endfor %}
                                     </tbody>
                                 </table>
-                            </div> <!-- Close the table-responsive div -->
+                            </div>
                             {% else %}
                             <p>No archived shows found.</p>
                             {% endif %}
