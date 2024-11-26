@@ -183,7 +183,6 @@ def cut_ready_show_into_sales_shows(request, ready_show_id):
     return redirect(request.META.get('HTTP_REFERER', 'operations_manager:ready-shows'))
 
 
-
 def process_all_ready_shows(request, ready_show_ids):
     """
     Loops through a list of ready_show_ids and processes each ReadyShow by
@@ -388,10 +387,11 @@ def assigned_sales_shows(request, label='EHUB'):
     # Filter assigned shows based on label and search query
     assigned_shows = SalesShow.objects.filter(
         Agent__isnull=False,
-        label=label
+        label=label,
+        is_archived=False
     ).filter(
         Q(name__icontains=search_query) | Q(Agent__username__icontains=search_query)
-    ).order_by("-id")
+    ).order_by("is_done", "-id")
 
     context = {
         'assigned_shows': assigned_shows,
@@ -548,6 +548,7 @@ def archive_sales_show(request, show_id):
         return HttpResponseRedirect(referer_url)
 
 
+@user_passes_test(lambda user: is_in_group(user, "operations_manager"))
 def archived_sales_shows(request):
     archived_shows = SalesShow.objects.filter(is_archived=True).order_by('-done_date')
 
@@ -558,3 +559,16 @@ def archived_sales_shows(request):
 
     return render(request, 'operations_manager/archived_sales_shows.html', {'page_obj': page_obj})
 
+
+@user_passes_test(lambda user: is_in_group(user, "operations_manager"))
+def unarchive_sales_show(request, show_id):
+    # Fetch the show by ID
+    show = get_object_or_404(SalesShow, id=show_id)
+    
+    # Update the is_archived field to False (unarchive)
+    show.is_archived = False
+    show.save()
+
+    # Redirect to the same page (to maintain pagination and filtering)
+    referer_url = request.META.get('HTTP_REFERER', 'operations_manager:archived-sales-shows')
+    return redirect(referer_url)

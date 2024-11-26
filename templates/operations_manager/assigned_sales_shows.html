@@ -38,6 +38,7 @@
                         <th scope="col">Leads Count</th>
                         <th scope="col">Assigned Agent</th>
                         <th scope="col">Status</th>
+                        <th scope="col">Archive</th> <!-- Added Archive column -->
                     </tr>
                 </thead>
                 <tbody>
@@ -62,6 +63,15 @@
                             {% else %}
                             <span class="badge bg-warning text-dark">Not Done</span>
                             {% endif %}
+                        </td>
+                        <td>
+                            <!-- Archive Button Form -->
+                            <form method="POST" action="{% url 'operations_manager:archive-sales-show' show.id %}"
+                                  style="display:inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="active_label" value="{{ active_label }}">
+                                <button type="submit" class="btn btn-danger btn-sm">Archive</button>
+                            </form>
                         </td>
                     </tr>
                     {% endfor %}
