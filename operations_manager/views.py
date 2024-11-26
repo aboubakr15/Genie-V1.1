@@ -213,7 +213,7 @@ def cut_ready_shows(request):
     else:
         messages.error(request, "Invalid request method.")
     
-    return redirect('operations_manager:ready-shows')
+    return redirect(request.META.get('HTTP_REFERER', 'operations_manager:ready-shows'))
 
 
 @user_passes_test(lambda user: is_in_group(user, "operations_manager"))
