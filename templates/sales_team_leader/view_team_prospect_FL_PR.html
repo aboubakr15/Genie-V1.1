@@ -108,7 +108,7 @@
                                                 placeholder="Add new contact" />
                                             <button type="button" class="btn btn-sm btn-primary add-contact"
                                                 data-lead-id="{{ lead_data.lead.id }}"
-                                                data-sheet-id="{{lead_data.sales_show.sheet.id }}">Add</button>
+                                                data-sheet-id="{{ selected_code.id }}">Add</button>
                                         </td>
                                         <td>
                                             <select name="termination_code_{{ lead_data.lead.id }}_{{ lead_data.sales_show_id }}" class="form-control termination-code-select">
