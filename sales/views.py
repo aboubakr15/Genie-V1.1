@@ -280,7 +280,10 @@ def view_saved_leads(request, code_id=None):
 
     termination_codes = TerminationCode.objects.filter(name__in=my_allowed)
     termination_codes_selection = TerminationCode.objects.exclude(name="IC") if role == "sales" else TerminationCode.objects.all()
-    leads = LeadTerminationCode.objects.filter(user=request.user, flag=code).order_by('-id')
+    
+    order_by = request.GET.get('order_by', '-entry_date')  # Default sorting
+    
+    leads = LeadTerminationCode.objects.filter(user=request.user, flag=code).order_by(order_by)
 
 
     if request.method == 'POST':
@@ -380,7 +383,8 @@ def view_saved_leads(request, code_id=None):
             'entry_date': lead_termination.entry_date,
             'timezone': lead_termination.lead.time_zone,
             'Agent': sales_show.Agent,
-            'is_qualified': lead_termination.is_qualified,  # Include is_qualified in the data
+            'is_qualified': lead_termination.is_qualified,  
+            'entry_date': lead_termination.entry_date,
         })
 
 
