@@ -169,7 +169,9 @@ def view_team_prospect(request, code_id=None, leader_id=None):
             leader.id
         )
 
-    leads = LeadTerminationCode.objects.filter(user__in=team_members, flag=code).order_by('-entry_date')
+    order_by = request.GET.get('order_by', '-entry_date')  # Default sorting
+
+    leads = LeadTerminationCode.objects.filter(user__in=team_members, flag=code).order_by(order_by)
     team_name = SalesTeams.objects.filter(leader=leader).first().label
 
 
@@ -269,7 +271,8 @@ def view_team_prospect(request, code_id=None, leader_id=None):
             'termination_code_id': lead_termination.flag.id,
             'is_qualified': lead_termination.is_qualified,
             'sales_show_id': sales_show.id,
-            'sales_show': sales_show
+            'sales_show': sales_show,
+            'entry_date': lead_termination.entry_date
         })
 
     context = {

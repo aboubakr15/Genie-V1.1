@@ -272,7 +272,7 @@ def ready_shows_view(request, label=None):
     ).order_by("-id")
 
     # Pagination
-    paginator = Paginator(ready_shows, 30)  # Show 30 items per page
+    paginator = Paginator(ready_shows, 60)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
@@ -306,7 +306,7 @@ def done_ready_shows(request, label=None):
     done_shows = done_shows.order_by("-id")
 
     # Pagination
-    paginator = Paginator(done_shows, 30)  # Show 30 items per page
+    paginator = Paginator(done_shows, 60)  # Show 30 items per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
@@ -339,7 +339,7 @@ def unassigned_sales_shows(request, label='EHUB'):
     unassigned_shows = unassigned_shows.order_by("-id")
 
     # Pagination
-    paginator = Paginator(unassigned_shows, 40)
+    paginator = Paginator(unassigned_shows, 60)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
