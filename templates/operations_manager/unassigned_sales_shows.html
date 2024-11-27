@@ -93,13 +93,11 @@
             <ul class="pagination justify-content-center">
                 {% if unassigned_shows.has_previous %}
                 <li class="page-item">
-                    <a class="page-link" href="?page=1{% if active_label %}&label={{ active_label }}{% endif %}">&laquo;
-                        First</a>
+                    <a class="page-link" href="?page=1{% if active_label %}&label={{ active_label }}{% endif %}">&laquo;First</a>
                 </li>
                 <li class="page-item">
                     <a class="page-link"
-                        href="?page={{ unassigned_shows.previous_page_number }}{% if active_label %}&label={{ active_label }}{% endif %}">&lsaquo;
-                        Previous</a>
+                        href="?page={{ unassigned_shows.previous_page_number }}{% if active_label %}&label={{ active_label }}{% endif %}">&lsaquo;Previous</a>
                 </li>
                 {% else %}
                 <li class="page-item disabled">
@@ -111,8 +109,7 @@
                 {% endif %}
 
                 <li class="page-item disabled">
-                    <span class="page-link">Page {{ unassigned_shows.number }} of {{
-                        unassigned_shows.paginator.num_pages }}</span>
+                    <span class="page-link">Page {{ unassigned_shows.number }} of {{ unassigned_shows.paginator.num_pages }}</span>
                 </li>
 
                 {% if unassigned_shows.has_next %}
