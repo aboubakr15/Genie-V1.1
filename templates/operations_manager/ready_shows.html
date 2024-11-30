@@ -48,6 +48,7 @@
                                             <th scope="col">Sheet Name</th>
                                             <th scope="col">Done Date</th>
                                             <th scope="col">Leads Count</th>
+                                            <th scope="col">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -59,6 +60,12 @@
                                             <td>{{ ready_show.sheet.name }}</td>
                                             <td>{{ ready_show.sheet.done_date }}</td>
                                             <td>{{ ready_show.leads.count }}</td>
+                                            <td>
+                                                <form method="POST" action="{% url 'operations_manager:archive-sheet' ready_show.id %}">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-danger">Archive</button>
+                                                </form>   
+                                            </td>
                                         </tr>
                                         {% endfor %}
                                     </tbody>

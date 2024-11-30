@@ -268,6 +268,7 @@ def ready_shows_view(request, label=None):
     ready_shows = ReadyShow.objects.filter(
         label=label,
         is_done=False,
+        is_archived=False,
         sheet__name__icontains=search_query  # Filter by sheet name
     ).order_by("-id")
 
@@ -572,3 +573,46 @@ def unarchive_sales_show(request, show_id):
     # Redirect to the same page (to maintain pagination and filtering)
     referer_url = request.META.get('HTTP_REFERER', 'operations_manager:archived-sales-shows')
     return redirect(referer_url)
+
+
+################################### Copied code cuz i am lazy ###################################
+
+@user_passes_test(lambda user: is_in_group(user, "operations_manager"))
+def archive_ready_show(request, show_id):
+    if request.method == 'POST':
+        ready_show = get_object_or_404(ReadyShow, id=show_id)  # Fetch the sheet by ID
+        ready_show.is_archived = True  # Mark as archived
+        ready_show.save()  # Save the changes to the database
+        
+        # Get the referring URL or use a fallback
+        referer_url = request.META.get('HTTP_REFERER', 'operations_manager:manage-sheets')
+        
+        # Redirect to the referring URL
+        return HttpResponseRedirect(referer_url)
+    
+
+@user_passes_test(lambda user: is_in_group(user, "operations_manager"))
+def archived_ready_shows(request):
+    archived_sheets = ReadyShow.objects.filter(is_archived=True).order_by('-done_date')  # Fetch archived sheets
+
+    # Pagination
+    paginator = Paginator(archived_sheets, 60)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'operations_manager/archived_ready_shows.html', {'page_obj': page_obj})
+
+
+@user_passes_test(lambda user: is_in_group(user, "operations_manager"))
+def unarchive_ready_show(request, show_id):
+    # Fetch the sheet by ID
+    ready_show = get_object_or_404(ReadyShow, id=show_id)
+    
+    # Update the is_done field to False (unarchive)
+    ready_show.is_archived = False
+    ready_show.save()
+
+    # Redirect to the same page (to maintain pagination and filtering)
+    referer_url = request.META.get('HTTP_REFERER', 'operations_manager:archived-sheets')
+    return redirect(referer_url)
+

@@ -37,6 +37,7 @@
                                             <th scope="col">Done By</th>
                                             <th scope="col">Number of Leads</th>
                                             <th scope="col">Done Date</th>
+                                            <th scope="col">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -55,6 +56,12 @@
                                             </td>
                                             <td>{{ sheet.leads.count }}</td>
                                             <td>{{ sheet.created_at|date:"d-m-Y H:i" }}</td>
+                                            <td>
+                                                <form method="POST" action="{% url 'administrator:archive-sheet' sheet.id %}">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-danger">Archive</button>
+                                                </form>                                                
+                                            </td>
                                         </tr>
                                         {% endfor %}
                                     </tbody>

@@ -43,6 +43,11 @@
         <i class="bi bi-card-list"></i><span>Done Shows</span>
       </a>
     </li>
+    <li class="nav-item">
+      <a class="nav-link" href="{% url 'administrator:archived-sheets' %}">
+        <i class="bi bi-card-list"></i><span>Archived Shows</span>
+      </a>
+    </li>
     {% endif %}
     {% endwith %}
     {% endif %}
@@ -413,6 +418,12 @@
     </ul>
   </li>
 
+  <li class="nav-item">
+    <a class="nav-link" href="{% url 'operations_manager:archived-sheets' %}">
+      <i class="bi bi-card-list"></i><span>Archived Ready Shows</span>
+    </a>
+  </li>
+
   <!-- Dropdown for Sales Shows -->
   <li class="nav-item">
     <a class="nav-link collapsed" data-bs-target="#sales-shows-nav" data-bs-toggle="collapse" href="#">
@@ -435,7 +446,7 @@
 
   <li class="nav-item">
     <a class="nav-link" href="{% url 'operations_manager:archived-sales-shows' %}">
-      <i class="bi bi-card-list"></i><span>Archived Shows</span>
+      <i class="bi bi-card-list"></i><span>Archived Sales Shows</span>
     </a>
   </li>
   <li class="nav-item">
