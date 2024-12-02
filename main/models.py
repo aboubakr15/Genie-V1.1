@@ -31,6 +31,7 @@ class Sheet(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     leads = models.ManyToManyField(Lead, related_name='sheets')
     is_approved = models.BooleanField(default=False)    #True when the team leader approves the upload process
+    is_archived = models.BooleanField(default=False)
     
     def __str__(self):
         return self.name
@@ -89,10 +90,11 @@ class ReadyShow(models.Model):
         ('EP', 'EP'),
     ]
 
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255)    # That is not used i use the name in the sheet because it is the same when cutting every cut show is not in the same page
     sheet = models.ForeignKey(Sheet, on_delete=models.SET_NULL, null=True)
     leads = models.ManyToManyField(Lead, related_name='ready_shows')
     is_done = models.BooleanField(default=False)       #To mark the show done after cutting it
+    is_archived = models.BooleanField(default=False)
     done_date = models.DateTimeField(null=True, blank=True)
     label = models.CharField(max_length=5, choices=LABEL_CHOICES, default='EHUB')
 

@@ -69,6 +69,7 @@
 
                 {% if leads_data|length > 0 %}
                     <form method="POST">
+                        <button type="submit" class="btn btn-primary" style="margin-bottom: 10px;">Save Changes</button>
                         {% csrf_token %}
                         <div class="table-responsive">
                             <table id="leadsTable" data-toggle="table" 
@@ -180,8 +181,6 @@
                                 </tbody>
                             </table>
                         </div>
-
-                        <button type="submit" class="btn btn-primary">Save Changes</button>
                     </form>
                 {% else %}
                     <div class="alert alert-warning">No leads available for this termination code.</div>

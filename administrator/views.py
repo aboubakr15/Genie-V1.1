@@ -1,3 +1,4 @@
+from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.models import Group, User
 from django.contrib import messages
@@ -179,7 +180,7 @@ def view_logs(request):
 
 @user_passes_test(lambda user: is_in_group(user, "administrator"))
 def manage_sheets(request):
-    sheets = Sheet.objects.filter(is_approved=True, is_done=False).order_by("-id")
+    sheets = Sheet.objects.filter(is_approved=True, is_done=False, is_archived=False).order_by("-id")
     q = request.GET.get("q", '')
 
     if q:
@@ -331,3 +332,43 @@ def done_sheets(request):
         'done_sheets': done_sheets
     }
     return render(request, 'administrator/done_sheets.html', context)
+
+
+@user_passes_test(lambda user: is_in_group(user, "administrator"))
+def archive_sheet(request, sheet_id):
+    if request.method == 'POST':
+        sheet = get_object_or_404(Sheet, id=sheet_id)  # Fetch the sheet by ID
+        sheet.is_archived = True  # Mark as archived
+        sheet.save()  # Save the changes to the database
+        
+        # Get the referring URL or use a fallback
+        referer_url = request.META.get('HTTP_REFERER', 'administrator:manage-sheets')
+        
+        # Redirect to the referring URL
+        return HttpResponseRedirect(referer_url)
+    
+
+@user_passes_test(lambda user: is_in_group(user, "administrator"))
+def archived_sheets(request):
+    archived_sheets = Sheet.objects.filter(is_archived=True).order_by('-done_date')  # Fetch archived sheets
+
+    # Pagination
+    paginator = Paginator(archived_sheets, 60)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'administrator/archived_sheets.html', {'page_obj': page_obj})
+
+
+@user_passes_test(lambda user: is_in_group(user, "administrator"))
+def unarchive_sheet(request, sheet_id):
+    # Fetch the sheet by ID
+    sheet = get_object_or_404(Sheet, id=sheet_id)
+    
+    # Update the is_done field to False (unarchive)
+    sheet.is_archived = False
+    sheet.save()
+
+    # Redirect to the same page (to maintain pagination and filtering)
+    referer_url = request.META.get('HTTP_REFERER', 'administrator:archived-sheets')
+    return redirect(referer_url)

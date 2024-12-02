@@ -41,6 +41,8 @@
 
                 {% if leads_data|length > 0 %}
                 <form method="POST">
+                    <!-- Save Changes Button Below the Table -->
+                    <button type="submit" class="btn btn-primary" style="margin-bottom: 10px;">Save Changes</button>
                     {% csrf_token %}
                     <table class="table table-striped table-bordered table-hover">
                         <thead>
@@ -136,8 +138,6 @@
                             {% endfor %}
                         </tbody>
                     </table>
-                    <!-- Save Changes Button Below the Table -->
-                    <button type="submit" class="btn btn-primary">Save Changes</button>
                 </form>
                 {% else %}
                 <div class="alert alert-warning">No leads available for this termination code.</div>

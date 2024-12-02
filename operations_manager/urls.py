@@ -4,7 +4,8 @@ from .views import (assign_lead_to_leader, done_ready_shows, index, manage_leads
 
 from .views import (assign_sales_show, ready_shows_view, cut_ready_show_into_sales_shows, price_requests_view,
                     cut_ready_shows, archived_sales_shows, assigned_sales_shows, update_price_requests,
-                    manage_referrals, notifications, archive_sales_show, unarchive_sales_show)
+                    manage_referrals, notifications, archive_sales_show, unarchive_sales_show, archive_ready_show,
+                    unarchive_ready_show, archived_ready_shows)
 
 from main.views import (lead_details, auto_fill, edit_lead, delete_lead, add_lead, 
                         upload_sheet, manage_filter_words, delete_filter_word)
@@ -66,5 +67,9 @@ urlpatterns = [
     path('unarchive/<int:show_id>/', unarchive_sales_show, name='unarchive-sales-show'),
 
     path('archived-sales-shows/', archived_sales_shows, name='archived-sales-shows'),
+
+    path('archive-sheet/<int:show_id>/', archive_ready_show, name='archive-sheet'),
+    path('archived-sheets/', archived_ready_shows, name='archived-sheets'),
+    path('unarchive-sheet/<int:show_id>/', unarchive_ready_show, name='unarchive-sheet'),
 
 ]
