@@ -2,6 +2,8 @@
   <ul class="sidebar-nav" id="sidebar-nav">
     {% if request.user.is_authenticated %}
     {% with request.user.groups.first as user_group %}
+
+
     {% if user_group and user_group.name == 'administrator' %}
     <li class="nav-item">
       <a class="nav-link" href="{% url 'administrator:administrator_index' %}">
@@ -40,17 +42,28 @@
     </li>
     <li class="nav-item">
       <a class="nav-link" href="{% url 'administrator:sheets-done' %}">
-        <i class="bi bi-card-list"></i><span>Done Shows</span>
+        <i class="bi bi-card-list"></i><span>Ready Shows Done</span>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="{% url 'administrator:manage-x-sheets' %}">
+        <i class="bi bi-bookmark"></i><span>X Shows</span>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="{% url 'administrator:sheets-x-done' %}">
+        <i class="bi bi-card-list"></i><span>X Shows Done</span>
       </a>
     </li>
     <li class="nav-item">
       <a class="nav-link" href="{% url 'administrator:archived-sheets' %}">
-        <i class="bi bi-card-list"></i><span>Archived Shows</span>
+        <i class="bi bi-archive"></i><span>Archived Shows</span>
       </a>
     </li>
     {% endif %}
     {% endwith %}
     {% endif %}
+
 
     {% if request.user.is_authenticated %}
     {% with request.user.groups.first as user_group %}
@@ -82,6 +95,11 @@
             <i class="bi bi-circle"></i><span>Upload Sheet</span>
           </a>
         </li>
+        <li>
+          <a href="{% url 'operations_team_leader:upload-x' %}">
+            <i class="bi bi-circle"></i><span>Upload X Folder</span>
+          </a>
+        </li>
       </ul>
     </li>
     <li class="nav-item">
@@ -102,6 +120,8 @@
     {% endif %}
     {% endwith %}
     {% endif %}
+
+
 
     {% if request.user.is_authenticated %}
     {% with request.user.groups.first as user_group %}
@@ -143,6 +163,9 @@
     {% endif %}
     {% endwith %}
     {% endif %}
+
+
+
 
     {% if request.user.is_authenticated %}
     {% with request.user.groups.first as user_group %}
@@ -194,7 +217,6 @@
       </ul>
     </li>
 
-
     <li class="nav-item">
       <a class="nav-link" href="{% url 'sales_team_leader:view-team-recycled' %}">
         <i class="bi bi-recycle"></i><span>Recycled Shows - Team</span>
@@ -224,6 +246,9 @@
     {% endif %}
     {% endwith %}
     {% endif %}
+
+
+
 
     {% if request.user.is_authenticated %}
     {% with request.user.groups.first as user_group %}
@@ -320,6 +345,9 @@
     {% endwith %}
     {% endif %}
 
+
+
+
     {% if request.user.is_authenticated %}
     {% with request.user.groups.first as user_group %}
     {% if user_group and user_group.name == 'sales' %}
@@ -373,6 +401,10 @@
   {% endwith %}
   {% endif %}
 
+
+
+
+  
   {% if request.user.is_authenticated %}
   {% with request.user.groups.first as user_group %}
   {% if user_group and user_group.name == 'operations_manager' %}
@@ -420,7 +452,7 @@
 
   <li class="nav-item">
     <a class="nav-link" href="{% url 'operations_manager:archived-sheets' %}">
-      <i class="bi bi-card-list"></i><span>Archived Ready Shows</span>
+      <i class="bi bi-archive"></i><span>Archived Ready Shows</span>
     </a>
   </li>
 
@@ -437,6 +469,11 @@
         </a>
       </li>
       <li>
+        <a href="{% url 'operations_manager:unassigned-x-sales-shows' %}">
+          <i class="bi bi-circle"></i><span>Unassigned X Shows</span>
+        </a>
+      </li>
+      <li>
         <a href="{% url 'operations_manager:assigned-sales-shows' %}">
           <i class="bi bi-circle"></i><span>Assigned Shows</span>
         </a>
@@ -446,7 +483,7 @@
 
   <li class="nav-item">
     <a class="nav-link" href="{% url 'operations_manager:archived-sales-shows' %}">
-      <i class="bi bi-card-list"></i><span>Archived Sales Shows</span>
+      <i class="bi bi-archive"></i><span>Archived Sales Shows</span>
     </a>
   </li>
   <li class="nav-item">
@@ -478,6 +515,11 @@
       <li>
         <a href="{% url 'operations_manager:upload-sheet' %}">
           <i class="bi bi-circle"></i><span>Upload Sheet</span>
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'operations_manager:upload-x' %}">
+          <i class="bi bi-circle"></i><span>Upload X Folder</span>
         </a>
       </li>
     </ul>
