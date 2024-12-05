@@ -343,8 +343,13 @@ def cut_sheet_into_ready_show(request, sheet_id):
     sheet_ws = workbook.active
     sheet_ws.title = "Leads"
     sheet_ws.append(["Company Name", "Email"])
+    
+    if sheet.is_x:
+        email_leads = [lead for tz in red_and_blue_leads_by_zone.values() for lead in tz]
+    else:
+        email_leads = all_leads
 
-    for lead in all_leads:
+    for lead in email_leads:
         if LeadTerminationHistory.objects.filter(lead=lead, termination_code__name__in=['show', 'CD']).exists():
             continue
         if FilterWords.objects.filter(word=lead.name, filter_types__name='email').exists():
@@ -358,8 +363,8 @@ def cut_sheet_into_ready_show(request, sheet_id):
     for lead in leads_to_referral:
         Referral.objects.create(lead=lead, sheet=sheet)
 
-    # Save the Excel workbook
-    save_path = os.path.join("//IBH/Inbound/Mails", f"{sheet.name}")
+    # Save the Excel workbook  //IBH/Inbound/Mails
+    save_path = os.path.join("C:/Users/PC/Desktop/mails", f"{sheet.name}")
     workbook.save(save_path)
 
 
