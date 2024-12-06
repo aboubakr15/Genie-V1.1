@@ -363,8 +363,8 @@ def cut_sheet_into_ready_show(request, sheet_id):
     for lead in leads_to_referral:
         Referral.objects.create(lead=lead, sheet=sheet)
 
-    # Save the Excel workbook  //IBH/Inbound/Mails
-    save_path = os.path.join("C:/Users/PC/Desktop/mails", f"{sheet.name}")
+    # Save the Excel workbook
+    save_path = os.path.join("//IBH/Inbound/Mails", f"{sheet.name}")
     workbook.save(save_path)
 
 
