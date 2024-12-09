@@ -13,7 +13,7 @@ class AutoFillForm(forms.Form):
         label="Select a Sheet",
         widget=forms.Select(attrs={'class': 'form-control'})
     )
-    
+
 
 class FilterWordsForm(forms.ModelForm):
     filter_types = forms.ModelMultipleChoiceField(

@@ -287,7 +287,6 @@ def ready_shows_view(request, label=None):
     return render(request, 'operations_manager/ready_shows.html', context)
 
 
-
 @user_passes_test(lambda user: is_in_group(user, "operations_manager"))
 def done_ready_shows(request, label=None):
     # Default label if not passed
@@ -329,7 +328,7 @@ def unassigned_sales_shows(request, label='EHUB'):
 
     # Filter unassigned shows based on the label and search term
     unassigned_shows = SalesShow.objects.filter(
-        Agent__isnull=True, label=label, is_archived=False
+        Agent__isnull=True, label=label, is_archived=False, is_x=False
     )
 
     if search_term:
@@ -377,6 +376,63 @@ def unassigned_sales_shows(request, label='EHUB'):
     }
 
     return render(request, 'operations_manager/unassigned_sales_shows.html', context)
+
+
+@user_passes_test(lambda user: is_in_group(user, "operations_manager"))
+def unassigned_x_sales_shows(request, label='EHUB'):
+    # Get the search term from the request
+    search_term = request.GET.get('search', '')
+
+    # Filter unassigned shows based on the label and search term
+    unassigned_shows = SalesShow.objects.filter(
+        Agent__isnull=True, label=label, is_archived=False, is_x=True
+    )
+
+    if search_term:
+        unassigned_shows = unassigned_shows.filter(
+            Q(name__icontains=search_term)  # Adjust 'name' to the relevant field(s)
+        )
+
+    unassigned_shows = unassigned_shows.order_by("-id")
+
+    # Pagination
+    paginator = Paginator(unassigned_shows, 60)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Create dictionaries for timezone counts and lead colors as before
+    timezone_counts = {
+        show.id: {
+            'est': show.leads.filter(time_zone='EST').count(),
+            'cen': show.leads.filter(time_zone='CEN').count(),
+            'pac': show.leads.filter(time_zone='PAC').count()
+        }
+        for show in page_obj
+    }
+
+    blue_red_leads_counts = {
+        show.id: LeadsColors.objects.filter(
+            lead__in=show.leads.all(), sheet=show.sheet, color__in=['blue', 'red']
+        ).count()
+        for show in page_obj
+    }
+
+    # Prepare list of sales agents
+    sales_agents = User.objects.filter(
+        Q(groups__name__in=['sales_manager', 'sales', 'sales_team_leader'])
+    ).distinct()
+
+    context = {
+        'unassigned_shows': page_obj,
+        'label': label,
+        'sales_agents': sales_agents,
+        'active_label': label,
+        'blue_red_leads_counts': blue_red_leads_counts,
+        'timezone_counts': timezone_counts,
+        'search_term': search_term,
+    }
+
+    return render(request, 'operations_manager/unassigned_x_sales_shows.html', context)
 
 
 # View for Assigned Sales Shows

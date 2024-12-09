@@ -1,7 +1,8 @@
 from django.urls import path, re_path
 from .views import accept_auto_fill_notification, index, notifications, notification_detail, accept_upload_notification
 from .views import decline_upload_notification, view_sheet, delete_excel_lead, edit_excel_lead
-from main.views import lead_details, auto_fill, edit_lead, delete_lead, upload_sheet, add_lead, leads_average_view, manage_filter_words, delete_filter_word
+from main.views import (lead_details, auto_fill, edit_lead, delete_lead, upload_sheet, add_lead,
+                        leads_average_view, manage_filter_words, delete_filter_word, import_folder)
 
 app_name="operations_team_leader"
 
@@ -26,5 +27,6 @@ urlpatterns = [
     re_path(r'^notifications/(?P<notification_id>\d+)/sheet/(?P<sheet_id>\d+)/edit/(?P<company_name>.+)/$', edit_excel_lead, name='edit-excel-lead'),
     path('manage-filter-words/', manage_filter_words, name='manage-filter-words'),
     path('delete-filter-word/<int:word_id>/', delete_filter_word, name='delete-filter-word'),
+    path('upload-X/', import_folder, name='upload-x'),
 ]
 
