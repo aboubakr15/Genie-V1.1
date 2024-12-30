@@ -17,6 +17,18 @@
                 <a class="nav-link {% if active_label == 'EP' %}active{% endif %}"
                     href="{% url 'operations_manager:unassigned-sales-shows' 'EP' %}">EP</a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link {% if active_label == 'UK' %}active{% endif %}"
+                href="{% url 'operations_manager:unassigned-sales-shows' 'UK' %}">UK</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if active_label == 'Asia' %}active{% endif %}"
+                href="{% url 'operations_manager:unassigned-sales-shows' 'Asia' %}">Asia</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if active_label == 'Europe' %}active{% endif %}"
+                href="{% url 'operations_manager:unassigned-sales-shows' 'Europe' %}">Europe</a>
+            </li>
         </ul>
 
         <!-- Search form -->

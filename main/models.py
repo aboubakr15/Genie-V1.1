@@ -91,6 +91,9 @@ class ReadyShow(models.Model):
         ('EHUB', 'EHUB'),
         ('EHUB2', 'EHUB2'),
         ('EP', 'EP'),
+        ('UK', 'UK'),
+        ('Europe', 'Europe'),
+        ('Asia', 'Asia'),
     ]
 
     name = models.CharField(max_length=255)    # That is not used i use the name in the sheet because it is the same when cutting every cut show is not in the same page
@@ -99,7 +102,7 @@ class ReadyShow(models.Model):
     is_done = models.BooleanField(default=False)       #To mark the show done after cutting it
     is_archived = models.BooleanField(default=False)
     done_date = models.DateTimeField(null=True, blank=True)
-    label = models.CharField(max_length=5, choices=LABEL_CHOICES, default='EHUB')
+    label = models.CharField(max_length=10, choices=LABEL_CHOICES, default='EHUB')
 
 
 class SalesShow(models.Model):
@@ -107,6 +110,9 @@ class SalesShow(models.Model):
         ('EHUB', 'EHUB'),
         ('EHUB2', 'EHUB2'),
         ('EP', 'EP'),
+        ('UK', 'UK'),
+        ('Europe', 'Europe'),
+        ('Asia', 'Asia'),
     ]
 
     Agent = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
@@ -119,7 +125,7 @@ class SalesShow(models.Model):
     rec_date = models.DateTimeField(null=True, blank=True)
     is_done_rec = models.BooleanField(default=False)   #To mark the show done after the recycle stage
     done_rec_date = models.DateTimeField(null=True, blank=True)
-    label = models.CharField(max_length=5, choices=LABEL_CHOICES, default='EHUB')
+    label = models.CharField(max_length=10, choices=LABEL_CHOICES, default='EHUB')
     is_archived = models.BooleanField(default=False)       # To Archive the show 
     is_x = models.BooleanField(default=False)
 

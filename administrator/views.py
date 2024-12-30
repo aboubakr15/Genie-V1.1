@@ -3,7 +3,7 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.models import Group, User
 from django.contrib import messages
 from main.models import (LeadEmails, Sheet, ReadyShow, Log, LeadTerminationHistory, FilterWords, Referral,
-                        Notification, LeadTerminationCode, SalesShow, IncomingsCount, LeadsColors)
+                        LeadTerminationCode, SalesShow, IncomingsCount, LeadsColors)
 from main.custom_decorators import is_in_group
 from .forms import UserCreationFormWithRole, UserUpdateForm
 from django.core.paginator import Paginator
@@ -238,115 +238,183 @@ def cut_sheet_into_ready_show(request, sheet_id):
     sheet.done_date = timezone.now()
     sheet.save()
 
-    # Filter out leads with termination codes 'show' and 'CD'
-    leads_to_referral = []
-    filtered_leads_by_zone = {'cen': [], 'est': [], 'pac': []}
-    red_and_blue_leads_by_zone = {'cen': [], 'est': [], 'pac': []}
+    # Define country sets
+    uk_countries = {c.lower() for c in ['Scotland', 'Wales', 'England', 'Ireland', 'UK']}
+    europe_countries = {c.lower() for c in [
+        'Poland', 'France', 'Lithuania', 'Sweden', 'Spain', 'Russia', 'Austria',
+        'Czechia', 'Belarus', 'Latvia', 'Malta', 'Greece', 'Andorra', 'Moldova',
+        'Turkiye', 'Georgia', 'Germany', 'Bulgaria', 'Norway', 'Romania',
+        'Estonia', 'San Marino', 'Slovenia', 'Switzerland', 'Montenegro', 'Croatia',
+        'Bosnia & Herzegovina', 'Isle of Man', 'Kosovo', 'Luxembourg', 'Hungary',
+        'Netherlands', 'Italy', 'Portugal', 'Denmark', 'Finland', 'Ukraine',
+        'North Macedonia', 'Lichtenstein', 'Slovakia', 'Belgium', 'Monaco',
+        'Albania', 'Cyprus', 'Kazakhstan']}
+    asia_countries = {c.lower() for c in [
+        'India', 'Indonesia', 'Pakistan', 'Bangladesh', 'Japan', 'Philippines',
+        'Vietnam', 'Iran', 'Thailand', 'South Korea', 'Malaysia', 'Saudi Arabia',
+        'Nepal', 'Sri Lanka', 'Cambodia', 'Jordan', 'United Arab Emirates',
+        'Tajikistan', 'Azerbaijan', 'Israel', 'Laos', 'Turkmenistan', 'Kyrgyzstan',
+        'Singapore', 'Oman', 'Kuwait', 'Mongolia', 'Qatar', 'Armenia', 'Bahrain',
+        'Maldives', 'Brunei', 'Hong Kong', 'China']}
 
-    # First, filter leads based on termination codes 'show' and 'CD'
+    # Initialize containers
+    leads_to_referral = []
+    na_leads = {'cen': [], 'est': [], 'pac': []}
+    region_leads = {'UK': [], 'Europe': [], 'Asia': []}
+    red_blue_na_leads = {'cen': [], 'est': [], 'pac': []}
+    red_blue_region_leads = {'UK': [], 'Europe': [], 'Asia': []}
+
+    def get_shows_count(total_leads):
+        if total_leads <= 20:
+            return 1
+        elif total_leads <= 50:
+            return 2
+        elif total_leads <= 100:
+            return 4
+        elif total_leads <= 200:
+            return 8
+        else:
+            return total_leads // 10
+
+    # Process all leads
     all_leads = sheet.leads.all()
     for lead in all_leads:
-        # Skip leads with termination code 'show' or 'CD'
+        # Handle referrals
         if LeadTerminationHistory.objects.filter(lead=lead, termination_code__name__in=['show', 'CD']).exists():
             if LeadTerminationHistory.objects.filter(lead=lead, termination_code__name='CD').exists():
-                leads_to_referral.append(lead)  # Add to referral list
-            continue  # Skip this lead
+                leads_to_referral.append(lead)
+            continue
 
-        # If the sheet is marked as 'is_x', filter by color (red, blue)
-        if sheet.is_x:
-            if LeadsColors.objects.filter(lead=lead, sheet=sheet, color__in=['red', 'blue']).exists():
-                # Add to the red/blue leads by time zone
-                for tz in ['cen', 'est', 'pac']:
-                    if lead.time_zone == tz:
-                        red_and_blue_leads_by_zone[tz].append(lead)
-                continue  # Skip this lead in the regular filtering loop
+        # Determine lead's region if it's not NA
+        region = None
+        time_zone_lower = lead.time_zone.lower() if lead.time_zone else ''
+        if time_zone_lower not in ['cen', 'est', 'pac']:
+            if time_zone_lower in uk_countries:
+                region = 'UK'
+            elif time_zone_lower in europe_countries:
+                region = 'Europe'
+            elif time_zone_lower in asia_countries:
+                region = 'Asia'
 
-        # Otherwise, filter leads based on time zone for ReadyShows
-        if lead.time_zone in filtered_leads_by_zone:
-            filtered_leads_by_zone[lead.time_zone].append(lead)
+        # Sort leads based on color and region
+        if sheet.is_x and LeadsColors.objects.filter(lead=lead, sheet=sheet, color__in=['red', 'blue']).exists():
+            if lead.time_zone.lower() in ['cen', 'est', 'pac']:
+                red_blue_na_leads[lead.time_zone.lower()].append(lead)
+            elif region:
+                red_blue_region_leads[region].append(lead)
+        else:
+            if lead.time_zone.lower() in ['cen', 'est', 'pac']:
+                na_leads[lead.time_zone.lower()].append(lead)
+            elif region:
+                region_leads[region].append(lead)
 
-    # Now handle red and blue leads separately for SalesShows
+    def distribute_na_leads_evenly(leads_dict, num_shows):
+        shows_leads = [[] for _ in range(num_shows)]
+        
+        for zone in ['cen', 'est', 'pac']:
+            leads = leads_dict[zone]
+            zone_lead_count = len(leads)
+            split_size = zone_lead_count // num_shows if num_shows > 0 else 0
+            
+            for i in range(num_shows):
+                start_idx = i * split_size
+                end_idx = start_idx + split_size
+                shows_leads[i].extend(leads[start_idx:end_idx])
+            
+            # Handle leftover leads
+            leftover_leads = leads[num_shows * split_size:]
+            for i, lead in enumerate(leftover_leads):
+                shows_leads[i % num_shows].append(lead)
+        
+        return shows_leads
+
+    # Handle red/blue leads first if sheet is_x
     if sheet.is_x:
-        total_red_blue_leads = sum(len(leads) for leads in red_and_blue_leads_by_zone.values())
-
-        if total_red_blue_leads > 0:
-            # Determine how many SalesShows to create based on the number of red/blue leads
-            if total_red_blue_leads <= 20:
-                sales_shows_count = 1
-            elif 20 < total_red_blue_leads <= 50:
-                sales_shows_count = 2
-            elif 50 < total_red_blue_leads <= 100:
-                sales_shows_count = 4
-            elif 100 < total_red_blue_leads <= 200:
-                sales_shows_count = 8
-            else:
-                sales_shows_count = total_red_blue_leads // 10
-
-            # Create empty lists for each SalesShow to hold red/blue leads
-            sales_show_leads = [[] for _ in range(sales_shows_count)]
-
-            # Distribute red and blue leads across the SalesShow objects evenly
-            for tz, leads in red_and_blue_leads_by_zone.items():
-                zone_lead_count = len(leads)
-                split_size = zone_lead_count // sales_shows_count
-
-                for i in range(sales_shows_count):
-                    start_index = i * split_size
-                    end_index = start_index + split_size
-                    sales_show_leads[i].extend(leads[start_index:end_index])
-
-                # Handle leftover leads from the current time zone
-                leftover_leads = leads[sales_shows_count * split_size:]
-                for i, lead in enumerate(leftover_leads):
-                    sales_show_leads[i % sales_shows_count].append(lead)
-
-            # Create SalesShows and assign the leads to them
-            for idx, leads_chunk in enumerate(sales_show_leads, start=1):
-                sales_show_name = f"{sheet.name} ({idx})"
+        # Process NA red/blue leads
+        total_na_red_blue = sum(len(leads) for leads in red_blue_na_leads.values())
+        if total_na_red_blue > 0:
+            sales_shows_count = get_shows_count(total_na_red_blue)
+            na_sales_show_leads = distribute_na_leads_evenly(red_blue_na_leads, sales_shows_count)
+            
+            for idx, leads_chunk in enumerate(na_sales_show_leads, start=1):
                 sales_show = SalesShow.objects.create(
-                    name=sales_show_name,
+                    name=f"{sheet.name} NA ({idx})",
                     sheet=sheet,
                     is_done=False,
                     is_x=True,
-                    label="EHUB"  # Just a default, adjust as necessary
+                    label="EHUB"  # Default label for NA sales shows
                 )
                 sales_show.leads.add(*leads_chunk)
                 sales_show.save()
 
-    # Now create ReadyShows for the other leads (those not red/blue)
+        # Process regional red/blue leads
+        for region, leads in red_blue_region_leads.items():
+            if leads:
+                region_count = len(leads)
+                shows_count = get_shows_count(region_count)
+                
+                # Split leads into chunks
+                chunk_size = len(leads) // shows_count
+                for i in range(shows_count):
+                    start_idx = i * chunk_size
+                    end_idx = start_idx + chunk_size if i < shows_count - 1 else len(leads)
+                    
+                    sales_show = SalesShow.objects.create(
+                        name=f"{sheet.name} {region} ({i+1})",
+                        sheet=sheet,
+                        is_done=False,
+                        is_x=True,
+                        label=region  # Regional label for regional sales shows
+                    )
+                    sales_show.leads.add(*leads[start_idx:end_idx])
+                    sales_show.save()
+
+    # Create ReadyShows for remaining leads (both for X and non-X sheets)
+    # First, create 3 ReadyShows for NA leads
     labels = ['EHUB', 'EHUB2', 'EP']
-    ready_show_objects = [ReadyShow.objects.create(sheet=sheet, label=labels[i]) for i in range(3)]
+    na_ready_shows = [
+        ReadyShow.objects.create(
+            sheet=sheet,
+            label=label,
+            name=f"{sheet.name} - {label}",
+        ) for label in labels
+    ]
+    
+    # Distribute NA leads evenly across the 3 shows
+    na_ready_show_leads = distribute_na_leads_evenly(na_leads, 3)
+    for show, leads in zip(na_ready_shows, na_ready_show_leads):
+        show.leads.add(*leads)
+        show.save()
 
-    # Distribute the remaining leads (not red/blue) into ReadyShows
-    for tz, leads in filtered_leads_by_zone.items():
-        total_leads = len(leads)
-        split_size = total_leads // 3  # Calculate the regular size for each group
-
-        # Split leads evenly among the 3 ReadyShow objects
-        for i in range(3):
-            start_index = i * split_size
-            end_index = start_index + split_size
-            ready_show_leads = leads[start_index:end_index]
-            ready_show_objects[i].leads.add(*ready_show_leads)
-
-        # Handle leftover leads (if any)
-        leftover_leads = leads[3 * split_size:]
-        for i, lead in enumerate(leftover_leads):
-            ready_show_objects[i % 3].leads.add(lead)
-
-        # Save the ReadyShows after assigning leads
-        for ready_show in ready_show_objects:
+    # Create one ReadyShow for each region
+    for region, leads in region_leads.items():
+        if leads:
+            ready_show = ReadyShow.objects.create(
+                sheet=sheet,
+                label=region,
+                name=f"{sheet.name} {region}",
+            )
+            ready_show.leads.add(*leads)
             ready_show.save()
 
-    # Handle emails and referrals after processing all shows
+    # Handle referrals
+    for lead in leads_to_referral:
+        Referral.objects.create(lead=lead, sheet=sheet)
+
+    # Handle emails
     workbook = openpyxl.Workbook()
     sheet_ws = workbook.active
     sheet_ws.title = "Leads"
     sheet_ws.append(["Company Name", "Email"])
     
     if sheet.is_x:
-        email_leads = [lead for tz in red_and_blue_leads_by_zone.values() for lead in tz]
+        # For X sheets, only include red/blue leads
+        email_leads = [
+            lead for lead in all_leads
+            if LeadsColors.objects.filter(lead=lead, sheet=sheet, color__in=['red', 'blue']).exists()
+        ]
     else:
+        # For non-X sheets, include all leads
         email_leads = all_leads
 
     for lead in email_leads:
@@ -360,15 +428,12 @@ def cut_sheet_into_ready_show(request, sheet_id):
             lead_email = lead_email_obj.value
             sheet_ws.append([lead.name, lead_email])
 
-    for lead in leads_to_referral:
-        Referral.objects.create(lead=lead, sheet=sheet)
-
-    # Save the Excel workbook
-    save_path = os.path.join("//IBH/Inbound/Mails", f"{sheet.name}")
+    # Save the Excel workbook  //IBH/Inbound/Mails
+    save_path = os.path.join("C:/Users/PC/Downloads/emails", f"{sheet.name}.xlsx")
     workbook.save(save_path)
 
-
     return redirect('administrator:manage-sheets')
+
 
 
 @user_passes_test(lambda user: is_in_group(user, "administrator"))
