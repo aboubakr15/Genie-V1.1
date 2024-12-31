@@ -298,12 +298,12 @@ def cut_sheet_into_ready_show(request, sheet_id):
 
         # Sort leads based on color and region
         if sheet.is_x and LeadsColors.objects.filter(lead=lead, sheet=sheet, color__in=['red', 'blue']).exists():
-            if lead.time_zone.lower() in ['cen', 'est', 'pac']:
+            if lead.time_zone.lower() if lead.time_zone else '' in ['cen', 'est', 'pac']:
                 red_blue_na_leads[lead.time_zone.lower()].append(lead)
             elif region:
                 red_blue_region_leads[region].append(lead)
         else:
-            if lead.time_zone.lower() in ['cen', 'est', 'pac']:
+            if lead.time_zone.lower() if lead.time_zone else '' in ['cen', 'est', 'pac']:
                 na_leads[lead.time_zone.lower()].append(lead)
             elif region:
                 region_leads[region].append(lead)
@@ -376,7 +376,7 @@ def cut_sheet_into_ready_show(request, sheet_id):
         ReadyShow.objects.create(
             sheet=sheet,
             label=label,
-            name=f"{sheet.name} - {label}",
+            name=f"{sheet.name}",
         ) for label in labels
     ]
     
@@ -428,8 +428,8 @@ def cut_sheet_into_ready_show(request, sheet_id):
             lead_email = lead_email_obj.value
             sheet_ws.append([lead.name, lead_email])
 
-    # Save the Excel workbook  //IBH/Inbound/Mails
-    save_path = os.path.join("C:/Users/PC/Downloads/emails", f"{sheet.name}.xlsx")
+    # Save the Excel workbook  
+    save_path = os.path.join("//IBH/Inbound/Mails", f"{sheet.name}.xlsx")
     workbook.save(save_path)
 
     return redirect('administrator:manage-sheets')
