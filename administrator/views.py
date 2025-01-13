@@ -396,7 +396,7 @@ def cut_x_multiple_sheets(request):
 @user_passes_test(lambda user: is_in_group(user, "administrator"))
 def done_sheets(request):
     # Fetch sheets that are marked as done
-    done_sheets_list = Sheet.objects.filter(is_done=True).order_by("-id")
+    done_sheets_list = Sheet.objects.filter(is_done=True, is_x=False).order_by("-id")
     
     # Set up pagination (10 items per page, for example)
     paginator = Paginator(done_sheets_list, 30)  # Show 10 sheets per page

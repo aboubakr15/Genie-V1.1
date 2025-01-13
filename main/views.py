@@ -995,9 +995,12 @@ def import_folder(request):
 
                 # Ensure atomic transaction
                 with transaction.atomic():
-                    sheet, created = Sheet.objects.get_or_create(
-                        name=file.name,
-                        defaults={'user': request.user, 'created_at': datetime.now()}
+                    random_suffix = generate_random_string(5)  # Generate a random suffix
+                    unique_sheet_name = f"{file.name}_{random_suffix}"  # Create a unique name
+                    sheet = Sheet.objects.create(
+                        name=unique_sheet_name,
+                        user=request.user,
+                        created_at=datetime.now()
                     )
 
                     for _, row in data.iterrows():
