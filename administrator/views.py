@@ -239,23 +239,27 @@ def cut_sheet_into_ready_show(request, sheet_id):
     sheet.save()
 
     # Define country sets
-    uk_countries = {c.lower() for c in ['Scotland', 'Wales', 'England', 'Ireland', 'UK']}
-    europe_countries = {c.lower() for c in [
-        'Poland', 'France', 'Lithuania', 'Sweden', 'Spain', 'Russia', 'Austria',
-        'Czechia', 'Belarus', 'Latvia', 'Malta', 'Greece', 'Andorra', 'Moldova',
-        'Turkiye', 'Georgia', 'Germany', 'Bulgaria', 'Norway', 'Romania',
-        'Estonia', 'San Marino', 'Slovenia', 'Switzerland', 'Montenegro', 'Croatia',
-        'Bosnia & Herzegovina', 'Isle of Man', 'Kosovo', 'Luxembourg', 'Hungary',
-        'Netherlands', 'Italy', 'Portugal', 'Denmark', 'Finland', 'Ukraine',
-        'North Macedonia', 'Lichtenstein', 'Slovakia', 'Belgium', 'Monaco',
-        'Albania', 'Cyprus', 'Kazakhstan']}
-    asia_countries = {c.lower() for c in [
-        'India', 'Indonesia', 'Pakistan', 'Bangladesh', 'Japan', 'Philippines',
-        'Vietnam', 'Iran', 'Thailand', 'South Korea', 'Malaysia', 'Saudi Arabia',
-        'Nepal', 'Sri Lanka', 'Cambodia', 'Jordan', 'United Arab Emirates',
-        'Tajikistan', 'Azerbaijan', 'Israel', 'Laos', 'Turkmenistan', 'Kyrgyzstan',
-        'Singapore', 'Oman', 'Kuwait', 'Mongolia', 'Qatar', 'Armenia', 'Bahrain',
-        'Maldives', 'Brunei', 'Hong Kong', 'China']}
+    uk_countries = {'scotland', 'wales', 'england', 'ireland', 'uk'}
+
+    europe_countries = {
+        'poland', 'france', 'lithuania', 'sweden', 'spain', 'russia', 'austria',
+        'czechia', 'belarus', 'latvia', 'malta', 'greece', 'andorra', 'moldova',
+        'turkiye', 'georgia', 'germany', 'bulgaria', 'norway', 'romania',
+        'estonia', 'san marino', 'slovenia', 'switzerland', 'montenegro', 'croatia',
+        'bosnia & herzegovina', 'isle of man', 'kosovo', 'luxembourg', 'hungary',
+        'netherlands', 'italy', 'portugal', 'denmark', 'finland', 'ukraine',
+        'north macedonia', 'lichtenstein', 'slovakia', 'belgium', 'monaco',
+        'albania', 'cyprus', 'kazakhstan'
+    }
+
+    asia_countries = {
+        'india', 'indonesia', 'pakistan', 'bangladesh', 'japan', 'philippines',
+        'vietnam', 'iran', 'thailand', 'south korea', 'malaysia', 'saudi arabia',
+        'nepal', 'sri lanka', 'cambodia', 'jordan', 'united arab emirates',
+        'tajikistan', 'azerbaijan', 'israel', 'laos', 'turkmenistan', 'kyrgyzstan',
+        'singapore', 'oman', 'kuwait', 'mongolia', 'qatar', 'armenia', 'bahrain',
+        'maldives', 'brunei', 'hong kong', 'china'
+    }
 
     # Initialize containers
     leads_to_referral = []
@@ -287,7 +291,7 @@ def cut_sheet_into_ready_show(request, sheet_id):
 
         # Determine lead's region if it's not NA
         region = None
-        time_zone_lower = lead.time_zone.lower() if lead.time_zone else ''
+        time_zone_lower = lead.time_zone.strip().lower() if lead.time_zone else ''
         if time_zone_lower not in ['cen', 'est', 'pac']:
             if time_zone_lower in uk_countries:
                 region = 'UK'
@@ -298,12 +302,12 @@ def cut_sheet_into_ready_show(request, sheet_id):
 
         # Sort leads based on color and region
         if sheet.is_x and LeadsColors.objects.filter(lead=lead, sheet=sheet, color__in=['red', 'blue']).exists():
-            if lead.time_zone.lower() if lead.time_zone else '' in ['cen', 'est', 'pac']:
+            if time_zone_lower in ['cen', 'est', 'pac']:
                 red_blue_na_leads[lead.time_zone.lower()].append(lead)
             elif region:
                 red_blue_region_leads[region].append(lead)
         else:
-            if lead.time_zone.lower() if lead.time_zone else '' in ['cen', 'est', 'pac']:
+            if time_zone_lower in ['cen', 'est', 'pac']:
                 na_leads[lead.time_zone.lower()].append(lead)
             elif region:
                 region_leads[region].append(lead)
