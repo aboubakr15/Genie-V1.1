@@ -1,4 +1,5 @@
 from io import BytesIO
+from django.urls import reverse
 from openpyxl.utils import get_column_letter
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
@@ -947,7 +948,7 @@ def mark_as_read(request, notification_id):
     notification = get_object_or_404(Notification, id=notification_id, receiver=request.user)
     notification.read = True
     notification.save()
-    return redirect(f'{role}:notifications')  # Redirect back to the notifications page
+    return redirect(request.META.get('HTTP_REFERER', reverse(f'{role}:notifications')))
 
 
 

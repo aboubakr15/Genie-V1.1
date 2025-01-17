@@ -342,7 +342,8 @@ def search(request):
         return render(request, "sales_team_leader/search.html")
 
     leads_with_shows = []  # List to hold leads with their corresponding shows
-    query = request.POST.get('query', '').strip() if request.method == 'POST' else ''
+    query = request.POST.get('query', '').strip()
+    search_by = request.POST.get('search_by', 'lead_name')  # Default search by lead name
 
     # Get the current user (sales team leader)
     current_user = request.user
@@ -365,25 +366,19 @@ def search(request):
     # Combine user and team member leads
     all_leads = user_leads | team_member_leads
 
-    # If there is a search query, filter by name or phone number
+    # If there is a search query, filter based on the selected search_by option
     if query:
-        # Search by lead name
-        leads_by_name = all_leads.filter(name__icontains=query).distinct()
-
-        # Search by phone number
-        phone_numbers = LeadPhoneNumbers.objects.filter(
-            value__icontains=query,
-            sheet__in=user_shows.values('sheet') | team_member_shows.values('sheet')
-        )
-
-        leads_by_phone = Lead.objects.filter(id__in=phone_numbers.values('lead_id')).distinct()
-
-        # Search by show name
-        shows_by_name = SalesShow.objects.filter(name__icontains=query, Agent__isnull=False)
-        leads_by_show_name = Lead.objects.filter(sales_shows__in=shows_by_name).distinct()
-
-        # Combine leads found by name and phone number
-        all_leads = leads_by_name.union(leads_by_phone, leads_by_show_name)
+        if search_by == 'lead_name':
+            all_leads = all_leads.filter(name__icontains=query).distinct()
+        elif search_by == 'phone_number':
+            phone_numbers = LeadPhoneNumbers.objects.filter(
+                value__icontains=query,
+                sheet__in=user_shows.values('sheet') | team_member_shows.values('sheet')
+            )
+            all_leads = Lead.objects.filter(id__in=phone_numbers.values('lead_id')).distinct()
+        elif search_by == 'show_name':
+            shows_by_name = SalesShow.objects.filter(name__icontains=query, Agent__in=[current_user] + list(team_members))
+            all_leads = Lead.objects.filter(sales_shows__in=shows_by_name).distinct()
 
     # Create a list of tuples (lead, show) for each lead's associated shows
     for lead in all_leads:
@@ -399,9 +394,11 @@ def search(request):
     context = {
         'leads_with_shows': page_obj,
         'query': query,
+        'search_by': search_by,
     }
 
     return render(request, "sales_team_leader/search.html", context)
+
 
 
 @user_passes_test(lambda user: is_in_group(user, "sales_team_leader"))

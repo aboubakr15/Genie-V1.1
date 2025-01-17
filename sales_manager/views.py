@@ -270,25 +270,24 @@ def search(request):
         return render(request, "sales_manager/search.html")
 
     leads_with_shows = []  # List to hold leads with their corresponding shows
-    query = request.POST.get('query', '').strip() if request.method == 'POST' else ''
+    query = request.POST.get('query', '').strip()  # Search query
+    search_by = request.POST.get('search_by', '')  # User's search preference
 
     # Get all leads that have associated sales shows where Agent is not null
     all_leads = Lead.objects.filter(sales_shows__Agent__isnull=False).distinct()
 
-    if query:
-        # Search by lead name
-        leads_by_name = all_leads.filter(name__icontains=query).distinct()
-
-        # Search by phone number
-        phone_numbers = LeadPhoneNumbers.objects.filter(value__icontains=query)
-        leads_by_phone = Lead.objects.filter(id__in=phone_numbers.values('lead_id')).distinct()
-
-        # Search by show name
-        shows_by_name = SalesShow.objects.filter(name__icontains=query, Agent__isnull=False)
-        leads_by_show_name = Lead.objects.filter(sales_shows__in=shows_by_name).distinct()
-
-        # Combine results from name, phone number, and show name searches
-        all_leads = leads_by_name.union(leads_by_phone, leads_by_show_name)
+    if query and search_by:
+        if search_by == 'lead_name':
+            # Search by lead name
+            all_leads = all_leads.filter(name__icontains=query).distinct()
+        elif search_by == 'phone_number':
+            # Search by phone number
+            phone_numbers = LeadPhoneNumbers.objects.filter(value__icontains=query)
+            all_leads = Lead.objects.filter(id__in=phone_numbers.values('lead_id')).distinct()
+        elif search_by == 'show_name':
+            # Search by sales show name
+            shows_by_name = SalesShow.objects.filter(name__icontains=query, Agent__isnull=False)
+            all_leads = Lead.objects.filter(sales_shows__in=shows_by_name).distinct()
 
     # Create a list of tuples (lead, show) for each lead's associated shows where Agent is not null
     for lead in all_leads:
@@ -304,9 +303,11 @@ def search(request):
     context = {
         'leads_with_shows': page_obj,
         'query': query,
+        'search_by': search_by,
     }
 
     return render(request, "sales_manager/search.html", context)
+
 
 
 @user_passes_test(lambda user: is_in_group(user, 'sales_manager'))

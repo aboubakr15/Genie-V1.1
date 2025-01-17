@@ -66,12 +66,13 @@
 
 <script>
 
-  var timeout;
+(function () {
+  let timeout; // Use `let` to prevent global variable issues
 
   function resetTimeout() {
     clearTimeout(timeout);
     // Set a timeout to log inactivity after 5 minutes (300000 milliseconds)
-    timeout = setTimeout(logInactivity, 350000);  // 5 minutes = 300000 ms
+    timeout = setTimeout(logInactivity, 300000); // Adjusted to 5 minutes
   }
 
   function logInactivity() {
@@ -81,25 +82,29 @@
       method: "POST",
       headers: {
         "X-CSRFToken": "{{ csrf_token }}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        'message': 'User inactive for 5 minutes'
+        message: "User inactive for 5 minutes",
+      }),
+    })
+      .then((response) => {
+        if (response.ok) {
+          console.log("Inactivity logged successfully.");
+        } else {
+          console.error("Logging inactivity failed:", response);
+        }
       })
-    }).then(response => {
-      if (response.ok) {
-        console.log("Inactivity logged successfully.");
-      } else {
-        console.error("Logging inactivity failed:", response);
-      }
-    });
+      .catch((error) => console.error("Error logging inactivity:", error));
   }
 
   // Reset the inactivity timeout whenever there is mouse movement
-  document.onmousemove = resetTimeout;
+  document.addEventListener("mousemove", resetTimeout);
 
   // Start the inactivity timer
-  resetTimeout();  
+  resetTimeout();
+})();
+
 </script>
 
 
