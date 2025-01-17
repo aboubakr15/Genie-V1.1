@@ -30,6 +30,8 @@
                 </button>
                 <ul class="dropdown-menu" aria-labelledby="orderByDropdown">
                     <li><a class="dropdown-item order-option" href="?order_by=CB_date"><i class="fa fa-sort-up"></i>CB Date</a></li>
+                    <li><a class="dropdown-item order-option" href="?order_by=-CB_date"><i class="fa fa-sort-down"></i>CB Date</a></li>
+                    <li><a class="dropdown-item order-option" href="?order_by=entry_date"><i class="fa fa-sort-up"></i>Entry Date</a></li>
                     <li><a class="dropdown-item order-option" href="?order_by=-entry_date"><i class="fa fa-sort-down"></i>Entry Date</a></li>
                 </ul>
             </div>
@@ -116,7 +118,7 @@
                                     {% endif %}
 
                                     <!-- Editable callback date -->
-                                    <input {% if lead_data.termination != "Call back" %} disabled {% endif %} type="date"
+                                    <input {% if lead_data.termination != "Call back" and lead_data.termination != "Incoming" %} disabled {% endif %} type="date"
                                         name="cb_date_{{ lead_data.lead.id }}_{{ lead_data.sales_show_id }}"
                                         value="{{ lead_data.cb_date|date:'Y-m-d' }}" class="form-control cb-date"
                                         id="cb_date_{{ lead_data.lead.id }}_{{ lead_data.sales_show_id }}" />

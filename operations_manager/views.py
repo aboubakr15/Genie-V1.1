@@ -393,6 +393,11 @@ def unassigned_sales_shows(request, label='EHUB'):
 
     unassigned_shows = unassigned_shows.order_by("-id")
 
+    # Pagination
+    paginator = Paginator(unassigned_shows, 60)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     # Only calculate timezone counts for labels where it applies
     timezone_counts = {}
     if label not in ['UK', 'Europe', 'Asia']:
@@ -418,7 +423,7 @@ def unassigned_sales_shows(request, label='EHUB'):
     ).distinct()
 
     context = {
-        'unassigned_shows': unassigned_shows,
+        'unassigned_shows': page_obj,
         'label': label,
         'sales_agents': sales_agents,
         'active_label': label,
