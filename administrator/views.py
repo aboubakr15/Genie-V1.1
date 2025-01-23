@@ -342,7 +342,7 @@ def cut_sheet_into_ready_show(request, sheet_id):
             
             for idx, leads_chunk in enumerate(na_sales_show_leads, start=1):
                 sales_show = SalesShow.objects.create(
-                    name=f"{sheet.name} NA ({idx})",
+                    name=f"{sheet.name} X ({idx})",
                     sheet=sheet,
                     is_done=False,
                     is_x=True,
@@ -380,7 +380,7 @@ def cut_sheet_into_ready_show(request, sheet_id):
         ReadyShow.objects.create(
             sheet=sheet,
             label=label,
-            name=f"{sheet.name}",
+            name=f"{sheet.name} - {label}",
         ) for label in labels
     ]
     
@@ -396,7 +396,7 @@ def cut_sheet_into_ready_show(request, sheet_id):
             ready_show = ReadyShow.objects.create(
                 sheet=sheet,
                 label=region,
-                name=f"{sheet.name} {region}",
+                name=f"{sheet.name} - {region}",
             )
             ready_show.leads.add(*leads)
             ready_show.save()

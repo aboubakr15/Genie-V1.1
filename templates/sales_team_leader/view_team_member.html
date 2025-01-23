@@ -11,13 +11,13 @@
         <li class="nav-item" role="presentation">
             {% if role == 'sales_team_leader' %}
                 <a class="nav-link {% if label == 'new' %}active{% endif %}" 
-                   id="new-tab" href="/sales_team_leader/view-team-member-shows/{{ member.user.id }}/new" 
+                   id="new-tab" href="/sales_team_leader/view-team-member-shows/{{ member.id }}/new" 
                    role="tab" aria-controls="new" aria-selected="{% if label == 'new' %}true{% else %}false{% endif %}">
                    New Shows
                 </a>
             {% else %}
                 <a class="nav-link {% if label == 'new' %}active{% endif %}" 
-                   id="new-tab" href="/sales_manager/view-team-member-shows/{{ member.user.id }}/new" 
+                   id="new-tab" href="/sales_manager/view-team-member-shows/{{ member.id }}/new" 
                    role="tab" aria-controls="new" aria-selected="{% if label == 'new' %}true{% else %}false{% endif %}">
                    New Shows
                 </a>
@@ -26,13 +26,13 @@
         <li class="nav-item" role="presentation">
             {% if role == 'sales_team_leader' %}
                 <a class="nav-link {% if label == 'done' %}active{% endif %}" 
-                   id="done-tab" href="/sales_team_leader/view-team-member-shows/{{ member.user.id }}/done" 
+                   id="done-tab" href="/sales_team_leader/view-team-member-shows/{{ member.id }}/done" 
                    role="tab" aria-controls="done" aria-selected="{% if label == 'done' %}true{% else %}false{% endif %}">
                    Done Shows
                 </a>
             {% else %}
                 <a class="nav-link {% if label == 'done' %}active{% endif %}" 
-                   id="done-tab" href="/sales_manager/view-team-member-shows/{{ member.user.id }}/done" 
+                   id="done-tab" href="/sales_manager/view-team-member-shows/{{ member.id }}/done" 
                    role="tab" aria-controls="done" aria-selected="{% if label == 'done' %}true{% else %}false{% endif %}">
                    Done Shows
                 </a>
