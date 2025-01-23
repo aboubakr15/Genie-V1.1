@@ -130,7 +130,7 @@ def view_team_member(request, member_id, label="new"):
     shows = SalesShow.objects.filter(Agent__id=member_id, is_done=(label=="done")).order_by('-id')
 
     # Get the team member object (optional)
-    member = get_object_or_404(UserLeader, user__id=member_id)
+    member = get_object_or_404(User, id=member_id)
 
     context = {
         'member': member,
