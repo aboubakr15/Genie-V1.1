@@ -616,9 +616,10 @@ def manage_referrals(request):
     # Create a dictionary to store unique referrals based on lead and sheet
     unique_referrals = {}
     for referral in referrals_list:
-        key = (referral.lead.id, referral.sheet.id)  # Use lead and sheet as a unique key
-        if key not in unique_referrals:
-            unique_referrals[key] = referral
+        if referral.lead is not None and referral.sheet is not None:  # Ensure lead and sheet are not None
+            key = (referral.lead.id, referral.sheet.id)  # Use lead and sheet as a unique key
+            if key not in unique_referrals:
+                unique_referrals[key] = referral
 
     # Now unique_referrals contains only the latest referral per lead and sheet combination
     referrals_list_2 = list(unique_referrals.values())
@@ -631,6 +632,7 @@ def manage_referrals(request):
     return render(request, 'operations_manager/manage_referrals.html', {
         'referrals': referrals,
     })
+
 
 
 @user_passes_test(lambda user: is_in_group(user, "operations_manager"))
