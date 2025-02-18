@@ -16,6 +16,18 @@
                 <a class="nav-link {% if active_label == 'EP' %}active{% endif %}"
                     href="{% url 'operations_manager:assigned-sales-shows' 'EP' %}">EP</a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link {% if active_label == 'UK' %}active{% endif %}"
+                    href="{% url 'operations_manager:assigned-sales-shows' 'UK' %}">UK</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if active_label == 'ASIA' %}active{% endif %}"
+                    href="{% url 'operations_manager:assigned-sales-shows' 'ASIA' %}">ASIA</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if active_label == 'EUROPE' %}active{% endif %}"
+                    href="{% url 'operations_manager:assigned-sales-shows' 'EUROPE' %}">EUROPE</a>
+            </li>
         </ul>
 
         <!-- Search Bar -->

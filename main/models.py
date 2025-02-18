@@ -250,6 +250,7 @@ class SalesTeams(models.Model):
         ('EHUB', 'EHUB'),
         ('EHUB2', 'EHUB2'),
         ('EP', 'EP'),
+        ('UK', 'UK'),
     ]
 
     label = models.CharField(max_length=10, choices=LABEL_CHOICES, default='EHUB')
