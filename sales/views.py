@@ -169,12 +169,6 @@ def show_detail(request, show_id, recycle=""):
                 if type(cb_date) == str:
                     cb_date = cb_date if cb_date.strip() else None
 
-                # if termination_code.name == 'CB' and cb_date is None:
-                #     from django.contrib import messages
-                #     messages.error(
-                #         request, f"You must provide a CB date for lead: {lead.name}.")
-                #     continue
-
                 LeadTerminationHistory.objects.create(
                     user = request.user,
                     termination_code=termination_code,

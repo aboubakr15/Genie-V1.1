@@ -23,6 +23,8 @@ class Lead(models.Model):
         return f"{self.name} --> {self.time_zone}"   
 
 
+# The excel Sheet that the Leads team upload (the first source of data that gets cut and distributed)
+
 class Sheet(models.Model):
     name = models.CharField(max_length=250, db_collation='utf8mb4_general_ci')
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
@@ -32,6 +34,7 @@ class Sheet(models.Model):
     leads = models.ManyToManyField(Lead, related_name='sheets')
     is_approved = models.BooleanField(default=False)    #True when the team leader approves the upload process
     is_archived = models.BooleanField(default=False)
+    is_x = models.BooleanField(default=False)           # true for x shows - bussiness needs - handled differently   
     
     def __str__(self):
         return self.name
@@ -88,6 +91,9 @@ class ReadyShow(models.Model):
         ('EHUB', 'EHUB'),
         ('EHUB2', 'EHUB2'),
         ('EP', 'EP'),
+        ('UK', 'UK'),
+        ('Europe', 'Europe'),
+        ('Asia', 'Asia'),
     ]
 
     name = models.CharField(max_length=255)    # That is not used i use the name in the sheet because it is the same when cutting every cut show is not in the same page
@@ -96,7 +102,7 @@ class ReadyShow(models.Model):
     is_done = models.BooleanField(default=False)       #To mark the show done after cutting it
     is_archived = models.BooleanField(default=False)
     done_date = models.DateTimeField(null=True, blank=True)
-    label = models.CharField(max_length=5, choices=LABEL_CHOICES, default='EHUB')
+    label = models.CharField(max_length=10, choices=LABEL_CHOICES, default='EHUB')
 
 
 class SalesShow(models.Model):
@@ -104,6 +110,9 @@ class SalesShow(models.Model):
         ('EHUB', 'EHUB'),
         ('EHUB2', 'EHUB2'),
         ('EP', 'EP'),
+        ('UK', 'UK'),
+        ('Europe', 'Europe'),
+        ('Asia', 'Asia'),
     ]
 
     Agent = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
@@ -116,8 +125,9 @@ class SalesShow(models.Model):
     rec_date = models.DateTimeField(null=True, blank=True)
     is_done_rec = models.BooleanField(default=False)   #To mark the show done after the recycle stage
     done_rec_date = models.DateTimeField(null=True, blank=True)
-    label = models.CharField(max_length=5, choices=LABEL_CHOICES, default='EHUB')
+    label = models.CharField(max_length=10, choices=LABEL_CHOICES, default='EHUB')
     is_archived = models.BooleanField(default=False)       # To Archive the show 
+    is_x = models.BooleanField(default=False)
 
     def __str__(self) -> str:
         return self.name
@@ -240,6 +250,7 @@ class SalesTeams(models.Model):
         ('EHUB', 'EHUB'),
         ('EHUB2', 'EHUB2'),
         ('EP', 'EP'),
+        ('UK', 'UK'),
     ]
 
     label = models.CharField(max_length=10, choices=LABEL_CHOICES, default='EHUB')

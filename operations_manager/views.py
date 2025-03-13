@@ -79,7 +79,7 @@ def manage_leads_teams(request):
     return render(request, "operations_manager/manage_teams.html", context)
 
 
-# Assign Each Lead Member to his Team Leader
+# Assign Each Leads team Member to his Team Leader
 @user_passes_test(lambda user: is_in_group(user, "operations_manager"))
 def assign_lead_to_leader(request):
     if request.method == 'POST':
@@ -124,61 +124,115 @@ def cut_ready_show_into_sales_shows(request, ready_show_id):
     ready_show.done_date = timezone.now()
     ready_show.save()
 
-    # Get the leads associated with the ReadyShow and group by time zone
-    time_zones = ['cen', 'est', 'pac']
-    leads_by_zone = {tz: list(ready_show.leads.filter(time_zone=tz)) for tz in time_zones}
+    # Labels to handle separately
+    special_labels = ['europe', 'asia', 'uk']
 
-    # Calculate the total number of leads and determine the number of SalesShows needed
-    total_leads = sum(len(leads) for leads in leads_by_zone.values())
+    # Check if the ReadyShow has a special label
+    if ready_show.label.lower() in special_labels:
+        # Get leads for the special label that have a time zone
+        leads = list(ready_show.leads.exclude(time_zone__isnull=True))
+        total_leads = len(leads)
 
-    # Determine how many SalesShows to create based on the number of leads
-    if total_leads <= 20:
-        sales_shows_count = 1
-    elif 20 < total_leads <= 50:
-        sales_shows_count = 2
-    elif 50 < total_leads <= 100:
-        sales_shows_count = 4
-    elif 100 < total_leads <= 200:
-        sales_shows_count = 8
-    elif 200 < total_leads <= 400:
-        sales_shows_count = 16
-    elif 400 < total_leads <= 800:
-        sales_shows_count = 32
-    elif 800 < total_leads <= 1600:
-        sales_shows_count = 64
-    else:
-        sales_shows_count = total_leads // 100  # Continuing the pattern (dividing by 100 for very large groups)
+        # Determine the number of SalesShows needed based on the number of leads
+        if total_leads <= 20:
+            sales_shows_count = 1
+        elif 20 < total_leads <= 50:
+            sales_shows_count = 2
+        elif 50 < total_leads <= 100:
+            sales_shows_count = 4
+        elif 100 < total_leads <= 200:
+            sales_shows_count = 8
+        elif 200 < total_leads <= 400:
+            sales_shows_count = 16
+        elif 400 < total_leads <= 800:
+            sales_shows_count = 32
+        elif 800 < total_leads <= 1600:
+            sales_shows_count = 64
+        else:
+            sales_shows_count = total_leads // 100  # Continuing the pattern (dividing by 100 for very large groups)
 
-    # Create empty lists for each SalesShow to hold leads
-    sales_show_leads = [[] for _ in range(sales_shows_count)]
-
-    # Distribute leads from each time zone across the SalesShow objects evenly
-    for tz, leads in leads_by_zone.items():
-        zone_lead_count = len(leads)
-        split_size = zone_lead_count // sales_shows_count
+        # Create empty lists for each SalesShow to hold leads
+        sales_show_leads = [[] for _ in range(sales_shows_count)]
 
         # Split leads evenly among the SalesShow objects
+        split_size = total_leads // sales_shows_count
+
         for i in range(sales_shows_count):
             start_index = i * split_size
             end_index = start_index + split_size
             sales_show_leads[i].extend(leads[start_index:end_index])
 
-        # Handle leftover leads (if any) from the current time zone
+        # Handle leftover leads (if any)
         leftover_leads = leads[sales_shows_count * split_size:]
         for i, lead in enumerate(leftover_leads):
             sales_show_leads[i % sales_shows_count].append(lead)
 
-    # Create SalesShows and assign the leads to them
-    for idx, leads_chunk in enumerate(sales_show_leads, start=1):
-        sales_show_name = f"{ready_show.sheet.name} ({idx})"  # Append number to SalesShow name
-        sales_show = SalesShow.objects.create(
-            name=sales_show_name,
-            sheet=ready_show.sheet,
-            is_done=False,
-            label=ready_show.label
-        )
-        sales_show.leads.add(*leads_chunk)
-        sales_show.save()
+        # Create SalesShows and assign the leads to them
+        for idx, leads_chunk in enumerate(sales_show_leads, start=1):
+            sales_show_name = f"{ready_show.sheet.name} ({ready_show.label.upper()} {idx})"  # Append number and label to SalesShow name
+            sales_show = SalesShow.objects.create(
+                name=sales_show_name,
+                sheet=ready_show.sheet,
+                is_done=False,
+                label=ready_show.label
+            )
+            sales_show.leads.add(*leads_chunk)
+            sales_show.save()
+
+    else:
+        # Original behavior for other labels
+        time_zones = ['cen', 'est', 'pac']
+        leads_by_zone = {tz: list(ready_show.leads.filter(time_zone=tz)) for tz in time_zones}
+
+        # Calculate the total number of leads and determine the number of SalesShows needed
+        total_leads = sum(len(leads) for leads in leads_by_zone.values())
+
+        if total_leads <= 20:
+            sales_shows_count = 1
+        elif 20 < total_leads <= 50:
+            sales_shows_count = 2
+        elif 50 < total_leads <= 100:
+            sales_shows_count = 4
+        elif 100 < total_leads <= 200:
+            sales_shows_count = 8
+        elif 200 < total_leads <= 400:
+            sales_shows_count = 16
+        elif 400 < total_leads <= 800:
+            sales_shows_count = 32
+        elif 800 < total_leads <= 1600:
+            sales_shows_count = 64
+        else:
+            sales_shows_count = total_leads // 100  # Continuing the pattern (dividing by 100 for very large groups)
+
+        # Create empty lists for each SalesShow to hold leads
+        sales_show_leads = [[] for _ in range(sales_shows_count)]
+
+        # Distribute leads from each time zone across the SalesShow objects evenly
+        for tz, leads in leads_by_zone.items():
+            zone_lead_count = len(leads)
+            split_size = zone_lead_count // sales_shows_count
+
+            for i in range(sales_shows_count):
+                start_index = i * split_size
+                end_index = start_index + split_size
+                sales_show_leads[i].extend(leads[start_index:end_index])
+
+            # Handle leftover leads (if any) from the current time zone
+            leftover_leads = leads[sales_shows_count * split_size:]
+            for i, lead in enumerate(leftover_leads):
+                sales_show_leads[i % sales_shows_count].append(lead)
+
+        # Create SalesShows and assign the leads to them
+        for idx, leads_chunk in enumerate(sales_show_leads, start=1):
+            sales_show_name = f"{ready_show.sheet.name} ({idx})"  # Append number to SalesShow name
+            sales_show = SalesShow.objects.create(
+                name=sales_show_name,
+                sheet=ready_show.sheet,
+                is_done=False,
+                label=ready_show.label
+            )
+            sales_show.leads.add(*leads_chunk)
+            sales_show.save()
 
     return redirect(request.META.get('HTTP_REFERER', 'operations_manager:ready-shows'))
 
@@ -258,7 +312,7 @@ def assign_sales_show(request):
 @user_passes_test(lambda user: is_in_group(user, "operations_manager"))
 def ready_shows_view(request, label=None):
     # If no label is passed, default to 'EHUB'
-    if label not in ['EHUB', 'EHUB2', 'EP']:
+    if label not in ['EHUB', 'EHUB2', 'EP', 'UK', 'Asia', 'Europe']:
         label = 'EHUB'
 
     # Get search query
@@ -273,7 +327,7 @@ def ready_shows_view(request, label=None):
     ).order_by("-id")
 
     # Pagination
-    paginator = Paginator(ready_shows, 60)
+    paginator = Paginator(ready_shows, 60)  # Show 30 items per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
@@ -329,7 +383,67 @@ def unassigned_sales_shows(request, label='EHUB'):
 
     # Filter unassigned shows based on the label and search term
     unassigned_shows = SalesShow.objects.filter(
-        Agent__isnull=True, label=label, is_archived=False
+        Agent__isnull=True, label=label, is_archived=False, is_x=False
+    )
+
+    if search_term:
+        unassigned_shows = unassigned_shows.filter(
+            Q(name__icontains=search_term)  # Adjust 'name' to the relevant field(s)
+        )
+
+    unassigned_shows = unassigned_shows.order_by("-id")
+
+    # Pagination
+    paginator = Paginator(unassigned_shows, 60)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Only calculate timezone counts for labels where it applies
+    timezone_counts = {}
+    if label not in ['UK', 'Europe', 'Asia']:
+        timezone_counts = {
+            show.id: {
+                'est': show.leads.filter(time_zone='EST').count(),
+                'cen': show.leads.filter(time_zone='CEN').count(),
+                'pac': show.leads.filter(time_zone='PAC').count()
+            }
+            for show in unassigned_shows
+        }
+
+    blue_red_leads_counts = {
+        show.id: LeadsColors.objects.filter(
+            lead__in=show.leads.all(), sheet=show.sheet, color__in=['blue', 'red']
+        ).count()
+        for show in unassigned_shows
+    }
+
+    # Prepare list of sales agents
+    sales_agents = User.objects.filter(
+        Q(groups__name__in=['sales_manager', 'sales', 'sales_team_leader'])
+    ).distinct()
+
+    context = {
+        'unassigned_shows': page_obj,
+        'label': label,
+        'sales_agents': sales_agents,
+        'active_label': label,
+        'blue_red_leads_counts': blue_red_leads_counts,
+        'timezone_counts': timezone_counts,
+        'search_term': search_term,
+    }
+
+    return render(request, 'operations_manager/unassigned_sales_shows.html', context)
+
+
+
+@user_passes_test(lambda user: is_in_group(user, "operations_manager"))
+def unassigned_x_sales_shows(request, label='EHUB'):
+    # Get the search term from the request
+    search_term = request.GET.get('search', '')
+
+    # Filter unassigned shows based on the label and search term
+    unassigned_shows = SalesShow.objects.filter(
+        Agent__isnull=True, is_archived=False, is_x=True
     )
 
     if search_term:
@@ -376,7 +490,7 @@ def unassigned_sales_shows(request, label='EHUB'):
         'search_term': search_term,
     }
 
-    return render(request, 'operations_manager/unassigned_sales_shows.html', context)
+    return render(request, 'operations_manager/unassigned_x_sales_shows.html', context)
 
 
 # View for Assigned Sales Shows
@@ -394,12 +508,18 @@ def assigned_sales_shows(request, label='EHUB'):
         Q(name__icontains=search_query) | Q(Agent__username__icontains=search_query)
     ).order_by("is_done", "-id")
 
+    # Pagination
+    page_number = request.GET.get('page', 1)  # Get the page number from the request, default to 1
+    paginator = Paginator(assigned_shows, 60)  # Show 10 shows per page
+    page_obj = paginator.get_page(page_number)
+
     context = {
-        'assigned_shows': assigned_shows,
+        'assigned_shows': page_obj,  # Pass the paginated shows to the template
         'label': label,
         'active_label': label,
         'search_query': search_query,
     }
+
     return render(request, 'operations_manager/assigned_sales_shows.html', context)
 
 
@@ -495,9 +615,10 @@ def manage_referrals(request):
     # Create a dictionary to store unique referrals based on lead and sheet
     unique_referrals = {}
     for referral in referrals_list:
-        key = (referral.lead.id, referral.sheet.id)  # Use lead and sheet as a unique key
-        if key not in unique_referrals:
-            unique_referrals[key] = referral
+        if referral.lead is not None and referral.sheet is not None:  # Ensure lead and sheet are not None
+            key = (referral.lead.id, referral.sheet.id)  # Use lead and sheet as a unique key
+            if key not in unique_referrals:
+                unique_referrals[key] = referral
 
     # Now unique_referrals contains only the latest referral per lead and sheet combination
     referrals_list_2 = list(unique_referrals.values())
@@ -510,6 +631,7 @@ def manage_referrals(request):
     return render(request, 'operations_manager/manage_referrals.html', {
         'referrals': referrals,
     })
+
 
 
 @user_passes_test(lambda user: is_in_group(user, "operations_manager"))
@@ -538,16 +660,28 @@ def notifications(request):
 @user_passes_test(lambda user: is_in_group(user, "operations_manager"))
 def archive_sales_show(request, show_id):
     if request.method == 'POST':
-        show = get_object_or_404(SalesShow, id=show_id)  # Fetch the show by ID
-        show.is_archived = True
-        show.save()  # Save the changes to the database
+        selected_shows = request.POST.get('selected_shows', '').split(',')
+        for show_id in selected_shows:
+            if show_id.isdigit():
+                show = get_object_or_404(SalesShow, id=int(show_id))
+                show.is_archived = True
+                show.save()
         
-        # Get the current URL from the 'HTTP_REFERER' header
-        referer_url = request.META.get('HTTP_REFERER', 'operations_manager:unassigned-sales-shows')
-        
-        # Redirect to the referring URL (where the request came from)
-        return HttpResponseRedirect(referer_url)
+        return redirect(request.META.get('HTTP_REFERER', 'operations_manager:unassigned-sales-shows'))
 
+
+def archive_sales_show_bulk(request):
+    if request.method == 'POST':
+        # Get comma-separated string and split into list
+        selected_shows = request.POST.get('selected_shows', '').split(',')
+        
+        for show_id in selected_shows:
+            if show_id.isdigit():  # Validate numeric ID
+                show = get_object_or_404(SalesShow, id=int(show_id))
+                show.is_archived = True
+                show.save()
+                
+        return redirect(request.META.get('HTTP_REFERER', 'operations_manager:unassigned-sales-shows'))
 
 @user_passes_test(lambda user: is_in_group(user, "operations_manager"))
 def archived_sales_shows(request):
@@ -575,7 +709,7 @@ def unarchive_sales_show(request, show_id):
     return redirect(referer_url)
 
 
-################################### Copied code cuz i am lazy ###################################
+################################### Copied code cuz i am lazy - for archiving shows ###################################
 
 @user_passes_test(lambda user: is_in_group(user, "operations_manager"))
 def archive_ready_show(request, show_id):

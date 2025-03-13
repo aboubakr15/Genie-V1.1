@@ -1,0 +1,44 @@
+{% extends "layout/base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">Upload Folder</h1>
+
+    {% if success %}
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ success }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endif %}
+
+    {% if skipped_files %}
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            Some files were skipped: {{ skipped_files|join:", " }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endif %}
+
+    {% if errors %}
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            Errors occurred while processing files:
+            <ul>
+                {% for error in errors %}
+                    <li>{{ error.0 }}: {{ error.1 }}</li>
+                {% endfor %}
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" class="border p-4 rounded bg-light shadow-sm">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="folderUpload" class="form-label">Select a Folder</label>
+            <input type="file" id="folderUpload" name="files" webkitdirectory directory multiple 
+                   class="form-control" required>
+            <div class="form-text">Choose a folder containing the files you want to upload.</div>
+        </div>
+        <button type="submit" class="btn btn-primary">Upload Folder</button>
+    </form>
+</div>
+{% endblock %}

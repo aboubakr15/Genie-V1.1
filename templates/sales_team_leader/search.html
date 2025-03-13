@@ -5,9 +5,27 @@
     <h2 class="text-center">Leads Search</h2>
     <form method="POST" class="mb-4">
         {% csrf_token %}
-        <div class="input-group">
-            <input type="text" class="form-control form-control-lg" name="query" placeholder="Enter the lead's name or phone number" required>
+        <div class="input-group mb-3">
+            <input type="text" class="form-control form-control-lg" name="query" value="{{ query }}" placeholder="Enter your search query" required>
             <button class="btn btn-primary" type="submit">Search</button>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Search By:</label>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="search_by" id="searchByName" value="lead_name" 
+                    {% if search_by == "lead_name" or not search_by %}checked{% endif %}>
+                <label class="form-check-label" for="searchByName">Lead Name</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="search_by" id="searchByPhone" value="phone_number" 
+                    {% if search_by == "phone_number" %}checked{% endif %}>
+                <label class="form-check-label" for="searchByPhone">Phone Number</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="search_by" id="searchByShow" value="show_name" 
+                    {% if search_by == "show_name" %}checked{% endif %}>
+                <label class="form-check-label" for="searchByShow">Show Name</label>
+            </div>
         </div>
     </form>
 
@@ -34,14 +52,13 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="4" class="text-center">No leads found.</td>
+                <td colspan="3" class="text-center">No leads found.</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
     {% else %}
-    <p class="text-muted">No search results to display. Please enter the lead name.</p>
+    <p class="text-muted">No search results to display. Please enter your search query and choose a search type.</p>
     {% endif %}
-
 </div>
 {% endblock %}

@@ -3,7 +3,7 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.models import Group, User
 from django.contrib import messages
 from main.models import (LeadEmails, Sheet, ReadyShow, Log, LeadTerminationHistory, FilterWords, Referral,
-                        Notification, LeadTerminationCode, SalesShow, IncomingsCount)
+                        LeadTerminationCode, SalesShow, IncomingsCount, LeadsColors)
 from main.custom_decorators import is_in_group
 from .forms import UserCreationFormWithRole, UserUpdateForm
 from django.core.paginator import Paginator
@@ -180,7 +180,7 @@ def view_logs(request):
 
 @user_passes_test(lambda user: is_in_group(user, "administrator"))
 def manage_sheets(request):
-    sheets = Sheet.objects.filter(is_approved=True, is_done=False, is_archived=False).order_by("-id")
+    sheets = Sheet.objects.filter(is_approved=True, is_done=False, is_archived=False, is_x=False).order_by("-id")
     q = request.GET.get("q", '')
 
     if q:
@@ -205,6 +205,32 @@ def manage_sheets(request):
 
 
 @user_passes_test(lambda user: is_in_group(user, "administrator"))
+def manage_x_sheets(request):
+    sheets = Sheet.objects.filter(is_approved=True, is_done=False, is_archived=False, is_x=True).order_by("-id")
+    q = request.GET.get("q", '')
+
+    if q:
+        sheets = sheets.filter(
+            Q(name__icontains=q)
+        )
+    paginator=Paginator(sheets, 50)
+
+
+    page_num = request.GET.get("page", '')
+    page_obj = paginator.get_page(page_num)
+
+    sheets = sheets.annotate(leads_count=models.Count('leads'))
+
+    context = {
+        "page_obj":page_obj,
+        "q":q
+    }
+
+
+    return render(request, "administrator/manage_x_sheets.html", context)
+
+
+@user_passes_test(lambda user: is_in_group(user, "administrator"))
 def cut_sheet_into_ready_show(request, sheet_id):
     # Get the sheet and mark it as done
     sheet = get_object_or_404(Sheet, id=sheet_id)
@@ -212,102 +238,210 @@ def cut_sheet_into_ready_show(request, sheet_id):
     sheet.done_date = timezone.now()
     sheet.save()
 
-    # Filter out leads with termination codes 'show' and 'CD'
+    # Define country sets
+    uk_countries = {'scotland', 'wales', 'england', 'ireland', 'uk'}
+
+    europe_countries = {
+        'poland', 'france', 'lithuania', 'sweden', 'spain', 'russia', 'austria',
+        'czechia', 'belarus', 'latvia', 'malta', 'greece', 'andorra', 'moldova',
+        'turkiye', 'georgia', 'germany', 'bulgaria', 'norway', 'romania',
+        'estonia', 'san marino', 'slovenia', 'switzerland', 'montenegro', 'croatia',
+        'bosnia & herzegovina', 'isle of man', 'kosovo', 'luxembourg', 'hungary',
+        'netherlands', 'italy', 'portugal', 'denmark', 'finland', 'ukraine',
+        'north macedonia', 'lichtenstein', 'slovakia', 'belgium', 'monaco',
+        'albania', 'cyprus', 'kazakhstan'
+    }
+
+    asia_countries = {
+        'india', 'indonesia', 'pakistan', 'bangladesh', 'japan', 'philippines',
+        'vietnam', 'iran', 'thailand', 'south korea', 'malaysia', 'saudi arabia',
+        'nepal', 'sri lanka', 'cambodia', 'jordan', 'united arab emirates',
+        'tajikistan', 'azerbaijan', 'israel', 'laos', 'turkmenistan', 'kyrgyzstan',
+        'singapore', 'oman', 'kuwait', 'mongolia', 'qatar', 'armenia', 'bahrain',
+        'maldives', 'brunei', 'hong kong', 'china'
+    }
+
+    # Initialize containers
     leads_to_referral = []
-    filtered_leads_by_zone = {'cen': [], 'est': [], 'pac': []}
+    na_leads = {'cen': [], 'est': [], 'pac': []}
+    region_leads = {'UK': [], 'Europe': [], 'Asia': []}
+    red_blue_na_leads = {'cen': [], 'est': [], 'pac': []}
+    red_blue_region_leads = {'UK': [], 'Europe': [], 'Asia': []}
 
-    # Group the leads by time zone (cen, est, pac)
-    time_zones = ['cen', 'est', 'pac']
-    for tz in time_zones:
-        leads = sheet.leads.filter(time_zone=tz)
-        for lead in leads:
-            if LeadTerminationHistory.objects.filter(lead=lead, termination_code__name='show').exists():
-                continue  # Skip leads with termination code 'show'
+    def get_shows_count(total_leads):
+        if total_leads <= 20:
+            return 1
+        elif total_leads <= 50:
+            return 2
+        elif total_leads <= 100:
+            return 4
+        elif total_leads <= 200:
+            return 8
+        else:
+            return total_leads // 10
+
+    # Process all leads
+    all_leads = sheet.leads.all()
+    for lead in all_leads:
+        # Handle referrals
+        if LeadTerminationHistory.objects.filter(lead=lead, termination_code__name__in=['show', 'CD']).exists():
             if LeadTerminationHistory.objects.filter(lead=lead, termination_code__name='CD').exists():
-                leads_to_referral.append(lead)  # Add to referral list
-                continue  # Skip leads with termination code 'CD'
-            filtered_leads_by_zone[tz].append(lead)  # Keep leads that can be assigned
+                leads_to_referral.append(lead)
+            continue
 
-    # Create 3 ReadyShow objects
+        # Determine lead's region if it's not NA
+        region = None
+        time_zone_lower = lead.time_zone.strip().lower() if lead.time_zone else ''
+        if time_zone_lower not in ['cen', 'est', 'pac']:
+            if time_zone_lower in uk_countries:
+                region = 'UK'
+            elif time_zone_lower in europe_countries:
+                region = 'Europe'
+            elif time_zone_lower in asia_countries:
+                region = 'Asia'
+
+        # Sort leads based on color and region
+        if sheet.is_x and LeadsColors.objects.filter(lead=lead, sheet=sheet, color__in=['red', 'blue']).exists():
+            if time_zone_lower in ['cen', 'est', 'pac']:
+                red_blue_na_leads[lead.time_zone.lower()].append(lead)
+            elif region:
+                red_blue_region_leads[region].append(lead)
+        else:
+            if time_zone_lower in ['cen', 'est', 'pac']:
+                na_leads[lead.time_zone.lower()].append(lead)
+            elif region:
+                region_leads[region].append(lead)
+
+    def distribute_na_leads_evenly(leads_dict, num_shows):
+        shows_leads = [[] for _ in range(num_shows)]
+        
+        for zone in ['cen', 'est', 'pac']:
+            leads = leads_dict[zone]
+            zone_lead_count = len(leads)
+            split_size = zone_lead_count // num_shows if num_shows > 0 else 0
+            
+            for i in range(num_shows):
+                start_idx = i * split_size
+                end_idx = start_idx + split_size
+                shows_leads[i].extend(leads[start_idx:end_idx])
+            
+            # Handle leftover leads
+            leftover_leads = leads[num_shows * split_size:]
+            for i, lead in enumerate(leftover_leads):
+                shows_leads[i % num_shows].append(lead)
+        
+        return shows_leads
+
+    # Handle red/blue leads first if sheet is_x
+    if sheet.is_x:
+        # Process NA red/blue leads
+        total_na_red_blue = sum(len(leads) for leads in red_blue_na_leads.values())
+        if total_na_red_blue > 0:
+            sales_shows_count = get_shows_count(total_na_red_blue)
+            na_sales_show_leads = distribute_na_leads_evenly(red_blue_na_leads, sales_shows_count)
+            
+            for idx, leads_chunk in enumerate(na_sales_show_leads, start=1):
+                sales_show = SalesShow.objects.create(
+                    name=f"{sheet.name} X ({idx})",
+                    sheet=sheet,
+                    is_done=False,
+                    is_x=True,
+                    label="EHUB"  # Default label for NA sales shows
+                )
+                sales_show.leads.add(*leads_chunk)
+                sales_show.save()
+
+        # Process regional red/blue leads
+        for region, leads in red_blue_region_leads.items():
+            if leads:
+                region_count = len(leads)
+                shows_count = get_shows_count(region_count)
+                
+                # Split leads into chunks
+                chunk_size = len(leads) // shows_count
+                for i in range(shows_count):
+                    start_idx = i * chunk_size
+                    end_idx = start_idx + chunk_size if i < shows_count - 1 else len(leads)
+                    
+                    sales_show = SalesShow.objects.create(
+                        name=f"{sheet.name} {region} ({i+1})",
+                        sheet=sheet,
+                        is_done=False,
+                        is_x=True,
+                        label=region  # Regional label for regional sales shows
+                    )
+                    sales_show.leads.add(*leads[start_idx:end_idx])
+                    sales_show.save()
+
+    # Create ReadyShows for remaining leads (both for X and non-X sheets)
+    # First, create 3 ReadyShows for NA leads
     labels = ['EHUB', 'EHUB2', 'EP']
-    ready_show_objects = [ReadyShow.objects.create(sheet=sheet, label=labels[i]) for i in range(3)]
+    na_ready_shows = [
+        ReadyShow.objects.create(
+            sheet=sheet,
+            label=label,
+            name=f"{sheet.name} - {label}",
+        ) for label in labels
+    ]
+    
+    # Distribute NA leads evenly across the 3 shows
+    na_ready_show_leads = distribute_na_leads_evenly(na_leads, 3)
+    for show, leads in zip(na_ready_shows, na_ready_show_leads):
+        show.leads.add(*leads)
+        show.save()
 
-    # Distribute leads from each time zone to each ReadyShow object evenly
-    for tz, leads in filtered_leads_by_zone.items():
-        total_leads = len(leads)
-        split_size = total_leads // 3  # Calculate the regular size for each group
+    # Create one ReadyShow for each region
+    for region, leads in region_leads.items():
+        if leads:
+            ready_show = ReadyShow.objects.create(
+                sheet=sheet,
+                label=region,
+                name=f"{sheet.name} - {region}",
+            )
+            ready_show.leads.add(*leads)
+            ready_show.save()
 
-        # Split leads evenly among the 3 ReadyShow objects
-        for i in range(3):
-            start_index = i * split_size
-            end_index = start_index + split_size
-            ready_show_leads = leads[start_index:end_index]
-            ready_show_objects[i].leads.add(*ready_show_leads)
+    # Handle referrals
+    for lead in leads_to_referral:
+        Referral.objects.create(lead=lead, sheet=sheet)
 
-        # Handle leftover leads (if any)
-        leftover_leads = leads[3 * split_size:]
-        for i, lead in enumerate(leftover_leads):
-            ready_show_objects[i % 3].leads.add(lead)
-
-    # Create a new workbook and select the active sheet
+    # Handle emails
     workbook = openpyxl.Workbook()
     sheet_ws = workbook.active
     sheet_ws.title = "Leads"
-
-    # Set the headers
     sheet_ws.append(["Company Name", "Email"])
+    
+    if sheet.is_x:
+        # For X sheets, only include red/blue leads
+        email_leads = [
+            lead for lead in all_leads
+            if LeadsColors.objects.filter(lead=lead, sheet=sheet, color__in=['red', 'blue']).exists()
+        ]
+    else:
+        # For non-X sheets, include all leads
+        email_leads = all_leads
 
-    # Collect all leads for the email sheet, skipping leads with termination code 'show' and 'CD'
-    all_leads = sheet.leads.all()
-    for lead in all_leads:
-        # Skip leads with a termination code 'show' or 'CD'
+    for lead in email_leads:
         if LeadTerminationHistory.objects.filter(lead=lead, termination_code__name__in=['show', 'CD']).exists():
             continue
-
-        # Skip leads whose name is in FilterWords with filter type 'email'
         if FilterWords.objects.filter(word=lead.name, filter_types__name='email').exists():
             continue
 
-        # Fetch the associated email from LeadEmails model
         lead_email_obj = LeadEmails.objects.filter(lead=lead, sheet=sheet).first()
-
-        # Only append the lead to the Excel file if it has an email
         if lead_email_obj:
             lead_email = lead_email_obj.value
             sheet_ws.append([lead.name, lead_email])
 
-    # Add leads with termination code 'CD' to the Referral model
-    for lead in leads_to_referral:
-        Referral.objects.create(lead=lead, sheet=sheet)
-        
-        # Attempt to send notification to the user
-        try:
-            # Get the operations_manager group
-            operations_manager_group = Group.objects.get(name="operations_manager")
-            # Get all users in the operations_manager group
-            operations_managers = operations_manager_group.user_set.all()
-
-            # Send a notification to each user in the operations_manager group
-            for user in operations_managers:
-                Notification.objects.create(
-                    sender=user,  # it’s a system notification
-                    receiver=user,
-                    message=f"Lead '{lead.name}' detected in show '{sheet.name}' as a former Closed Deal, Please check the Referrals sheet.",
-                    notification_type=6   # Referral
-                )
-
-        except Exception as e:
-            logger.error(f"Failed to create notification for user {user.username}: {e}")
-
-    # Define the hardcoded save path for the Excel file
-    save_path = os.path.join("//IBH/Inbound/Mails", f"{sheet.name}")
-
-    # Save the Excel workbook to the specified path
+    # Save the Excel workbook  
+    save_path = os.path.join("//IBH/Inbound/Mails", f"{sheet.name}.xlsx")
     workbook.save(save_path)
 
     return redirect('administrator:manage-sheets')
 
 
+
+
+@user_passes_test(lambda user: is_in_group(user, "administrator"))
 def cut_multiple_sheets(request):
     if request.method == "POST":
         selected_sheets = request.POST.getlist('selected_sheets')
@@ -319,9 +453,36 @@ def cut_multiple_sheets(request):
 
 
 @user_passes_test(lambda user: is_in_group(user, "administrator"))
+def cut_x_multiple_sheets(request):
+    if request.method == "POST":
+        selected_sheets = request.POST.getlist('selected_sheets')
+        for sheet_id in selected_sheets:
+            # Call your `cut_sheet_into_ready_show` function for each selected sheet
+            cut_sheet_into_ready_show(request, sheet_id)
+
+    return redirect('administrator:manage-x-sheets')
+
+
+@user_passes_test(lambda user: is_in_group(user, "administrator"))
 def done_sheets(request):
     # Fetch sheets that are marked as done
-    done_sheets_list = Sheet.objects.filter(is_done=True).order_by("-id")
+    done_sheets_list = Sheet.objects.filter(is_done=True, is_x=False).order_by("-id")
+    
+    # Set up pagination (10 items per page, for example)
+    paginator = Paginator(done_sheets_list, 30)  # Show 10 sheets per page
+    page_number = request.GET.get('page')
+    done_sheets = paginator.get_page(page_number)
+
+    context = {
+        'done_sheets': done_sheets
+    }
+    return render(request, 'administrator/done_sheets.html', context)
+
+
+@user_passes_test(lambda user: is_in_group(user, "administrator"))
+def done_x_sheets(request):
+    # Fetch sheets that are marked as done
+    done_sheets_list = Sheet.objects.filter(is_done=True, is_x=True).order_by("-id")
     
     # Set up pagination (10 items per page, for example)
     paginator = Paginator(done_sheets_list, 30)  # Show 10 sheets per page
@@ -350,7 +511,7 @@ def archive_sheet(request, sheet_id):
 
 @user_passes_test(lambda user: is_in_group(user, "administrator"))
 def archived_sheets(request):
-    archived_sheets = Sheet.objects.filter(is_archived=True).order_by('-done_date')  # Fetch archived sheets
+    archived_sheets = Sheet.objects.filter(is_archived=True).order_by('-id')  # Fetch archived sheets
 
     # Pagination
     paginator = Paginator(archived_sheets, 60)

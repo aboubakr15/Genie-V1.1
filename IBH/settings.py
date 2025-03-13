@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/5.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
-
+import tempfile
 from pathlib import Path
 import os
 # import wfastcgi
@@ -64,14 +64,6 @@ INSTALLED_APPS = [
 
 ASGI_APPLICATION = 'IBH.asgi.application'
 
-# CHANNEL_LAYERS = {
-#     "default": {
-#         "BACKEND": "channels_redis.core.RedisChannelLayer",
-#         "CONFIG": {
-#             "hosts": [("127.0.0.1", 6379)],
-#         },
-#     },
-# }
 
 # Session will expire when the browser is closed
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
@@ -198,7 +190,7 @@ LOGGING = {
         'file': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
-            'filename': 'general.log',
+            'filename': os.path.join(tempfile.gettempdir(), 'general.log'),
             'formatter': 'verbose',
         },
     },

@@ -1,4 +1,5 @@
 from io import BytesIO
+from django.urls import reverse
 from openpyxl.utils import get_column_letter
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
@@ -8,7 +9,7 @@ from leads.forms import UploadSheetsForm
 from .utils import has_valid_contact, is_valid_phone_number, clean_company_name, filter_companies, get_string_value, get_lead_related_data
 from .models import (Lead, Sheet, LeadContactNames, LeadEmails, LeadPhoneNumbers, Log, LeadsAverage, UserLeader, FilterWords,
                     FilterType, LeadsColors, SalesLog, LeadTerminationCode, Notification, TaskLog, TerminationCode)
-from .forms import AutoFillForm, FilterWordsForm # ImportSheetsForm  # For mass importing 
+from .forms import AutoFillForm, FilterWordsForm #UploadFilesForm # ImportSheetsForm  # For mass importing 
 import os, logging, pandas as pd
 from django.core.exceptions import ObjectDoesNotExist
 from datetime import datetime, timezone as dt_timezone, timedelta
@@ -26,10 +27,8 @@ from django.core.paginator import Paginator
 from django.views.decorators.csrf import csrf_exempt
 import json, pytz
 import random, string
-
-# For Mass Import
-# from concurrent.futures import ThreadPoolExecutor
-# from django.db import transaction
+from concurrent.futures import ThreadPoolExecutor
+from django.db import transaction
 
 def generate_random_string(length=5):
     """Generate a random string of fixed length."""
@@ -949,13 +948,122 @@ def mark_as_read(request, notification_id):
     notification = get_object_or_404(Notification, id=notification_id, receiver=request.user)
     notification.read = True
     notification.save()
-    return redirect(f'{role}:notifications')  # Redirect back to the notifications page
+    return redirect(request.META.get('HTTP_REFERER', reverse(f'{role}:notifications')))
 
 
+
+## Function to import X shows and an earlier version of it was used to import the inventory 
+@user_passes_test(lambda user: is_in_group(user, "operations_team_leader") or is_in_group(user, "operations_manager"))
+def import_folder(request):
+    if request.method == 'POST':
+        uploaded_files = request.FILES.getlist('files')
+        uploaded_sheets = []
+        skipped_files = []
+        errors = []
+
+        def process_file(file):
+            try:
+                # Read file into DataFrame
+                data = None
+                file_extension = str(file.name).split('.')[-1]
+                if file_extension == 'xlsx':
+                    data = pd.read_excel(file, engine='openpyxl', header=None)
+                elif file_extension == 'xls':
+                    data = pd.read_excel(file, header=None)
+                elif file_extension == 'csv':
+                    data = pd.read_csv(file, header=None)
+                else:
+                    skipped_files.append(file.name)
+                    return None
+
+                if data.empty:
+                    skipped_files.append(file.name)
+                    return None
+
+                def ensure_str(value):
+                    return str(value) if pd.notna(value) else ''
+
+                expected_headers = ['Company Name', 'Phone Number', 'Time Zone', 'Email', 'DM Name']
+                first_row_as_str = data.iloc[0].apply(ensure_str)
+                has_header = all(header.lower() in [col.lower() for col in first_row_as_str if col] for header in expected_headers)
+
+                if has_header:
+                    data.columns = data.iloc[0].apply(ensure_str).tolist()
+                    data = data[1:]  # Skip the header row
+
+                data['Company Name'] = data['Company Name'].map(clean_company_name)
+                data = data[data['Company Name'].apply(filter_companies)]
+
+                # Ensure atomic transaction
+                with transaction.atomic():
+                    random_suffix = generate_random_string(5)  # Generate a random suffix
+                    unique_sheet_name = f"{file.name}_{random_suffix}"  # Create a unique name
+                    sheet = Sheet.objects.create(
+                        name=unique_sheet_name,
+                        user=request.user,
+                        created_at=datetime.now()
+                    )
+
+                    for _, row in data.iterrows():
+                        if not has_valid_contact(row):
+                            continue
+
+                        company_name = ensure_str(row.get('Company Name', ''))
+                        lead, created = Lead.objects.get_or_create(name=company_name)
+                        if created:
+                            lead.time_zone = ensure_str(row.get('Time Zone', ''))
+                            lead.save()
+
+                        phone_numbers = filter(None, [ensure_str(row.get('Phone Number', '')).strip()])
+                        for phone_number in phone_numbers:
+                            if phone_number and is_valid_phone_number(phone_number):
+                                LeadPhoneNumbers.objects.get_or_create(lead=lead, sheet=sheet, value=phone_number)
+
+                        email = ensure_str(row.get('Email', ''))
+                        if email:
+                            LeadEmails.objects.get_or_create(lead=lead, sheet=sheet, value=email)
+
+                        contact_name = ensure_str(row.get('DM Name', ''))
+                        if contact_name:
+                            LeadContactNames.objects.get_or_create(lead=lead, sheet=sheet, value=contact_name)
+
+                        # Handle color if the 'Color' column exists
+                        if 'Color' in data.columns:
+                            color = get_string_value(row, 'Color')
+                            if color and color.lower() in ['white', 'green', 'blue', 'red']:
+                                LeadsColors.objects.create(lead=lead, sheet=sheet, color=color.lower())
+
+                        if sheet not in lead.sheets.all():
+                            lead.sheets.add(sheet)
+
+                        sheet.is_approved = True
+                        sheet.is_x = True   # Only for this function because it uploades x shows 
+                        sheet.save()
+                return sheet
+            except Exception as e:
+                errors.append((file.name, str(e)))
+                return None
+
+        # Process files sequentially
+        for file in uploaded_files:
+            result = process_file(file)
+            if result:
+                uploaded_sheets.append(result)
+
+        total_leads = sum(sheet.leads.count() for sheet in uploaded_sheets)
+
+        return render(request, 'main/upload_x_folder.html', {
+            'success': f"Uploaded {total_leads} total leads from {len(uploaded_sheets)} sheets.",
+            'skipped_files': skipped_files,
+            'errors': errors,
+        })
+
+    return render(request, 'main/upload_x_folder.html')
 
 ######################################################################################################################################################################################
 
 ## Function to import the sales inventory
+{
 # def import_lead_termination_history(request):
 #     form = ImportSheetsForm()
 
@@ -1059,156 +1167,4 @@ def mark_as_read(request, notification_id):
 #     return render(request, "leads/import_sheet.html", {
 #         "form": form
 #     })
-
-
-
-
-## Function to upload the inventory to the database
-# def import_sheets(request):
-#     form = ImportSheetsForm()
-
-#     if request.method == 'POST':
-#         form = ImportSheetsForm(request.POST)
-#         if form.is_valid():
-#             folder_path = form.cleaned_data['folder_path']
-#             if os.path.isdir(folder_path):
-#                 files = os.listdir(folder_path)
-#                 uploaded_sheets = []
-
-#                 # Add lists to collect skipped files and errors
-#                 skipped_files = []
-#                 errors = []
-
-#                 def process_file(file):
-#                     data = None
-#                     file_extension = str(file).split('.')[-1]
-#                     file_path = os.path.join(folder_path, file)
-
-#                     try:
-#                         if file_extension == 'xlsx':
-#                             data = pd.read_excel(file_path, engine='openpyxl', header=None)
-#                         elif file_extension == 'xls':
-#                             data = pd.read_excel(file_path, header=None)
-#                         elif file_extension == 'csv':
-#                             data = pd.read_csv(file_path, header=None)
-#                         else:
-#                             return None  # Skip unsupported file types
-#                     except Exception as e:
-#                         logger.error(f"Error reading file {file}: {e}")
-#                         return None  # Skip files that cannot be read
-                    
-#                     try:
-#                         if data.empty:
-#                             logger.warning(f"Skipped empty file: {file}")
-#                             skipped_files.append(file)
-#                             return None  # Skip empty files
-#                     except Exception as e:
-#                         logger.error(f"Error processing file {file}: {e}")
-#                         errors.append((file, str(e)))
-#                         return None
-
-#                     def ensure_str(value):
-#                         return str(value) if pd.notna(value) else ''
-
-#                     expected_headers = ['Company Name', 'Phone Number', 'Time Zone', 'Email', 'DM Name']
-#                     extended_expected_headers = ['Company Name', 'Phone Number', 'Time Zone', 'Direct / Cell Number', 'Email', 'DM Name']
-#                     first_row_as_str = data.iloc[0].apply(ensure_str)
-
-#                     has_header = all(header.lower() in [col.lower() for col in first_row_as_str if col] for header in expected_headers)
-#                     has_extended_header = all(header.lower() in [col.lower() for col in first_row_as_str if col] for header in extended_expected_headers)
-
-#                     if has_header or has_extended_header:
-#                         data.columns = data.iloc[0].apply(ensure_str).tolist()
-#                         data = data[1:]
-
-#                         if has_extended_header:
-#                             for i, header in enumerate(extended_expected_headers):
-#                                 if i >= len(data.columns) or data.columns[i] == '' or data.columns[i].lower() not in [h.lower() for h in extended_expected_headers]:
-#                                     data.columns[i] = header
-#                         else:
-#                             for i, header in enumerate(expected_headers):
-#                                 if i >= len(data.columns) or data.columns[i] == '' or data.columns[i].lower() not in [h.lower() for h in expected_headers]:
-#                                     data.columns[i] = header
-#                     else:
-#                         num_cols = data.shape[1]
-#                         default_columns = ['Company Name', 'Phone Number', 'Time Zone', 'Direct / Cell Number', 'Email', 'DM Name']
-#                         data.columns = default_columns[:num_cols] + [f"Column_{i}" for i in range(num_cols - len(default_columns))]
-
-#                     required_columns = ['Company Name', 'Phone Number', 'Email']
-#                     missing_columns = [col for col in required_columns if col not in data.columns]
-#                     if missing_columns:
-#                         logger.warning(f"File {file} is missing required columns: {', '.join(missing_columns)}")
-#                         return None
-
-#                     data['Company Name'] = data['Company Name'].map(clean_company_name)
-#                     data = data[data['Company Name'].apply(filter_companies)]
-
-#                     # Ensure atomic transaction
-#                     with transaction.atomic():
-#                         sheet, created = Sheet.objects.get_or_create(
-#                             name=file,
-#                             defaults={'user': request.user, 'created_at': datetime.now()}
-#                         )
-
-
-#                     for _, row in data.iterrows():
-#                         if not has_valid_contact(row):
-#                             continue
-
-#                         company_name = ensure_str(row.get('Company Name', ''))
-
-#                         lead, created = Lead.objects.get_or_create(name=company_name)
-#                         if created:
-#                             lead.time_zone = ensure_str(row.get('Time Zone', ''))
-#                             lead.save()
-
-#                         phone_numbers = filter(None, [ensure_str(row.get('Phone Number', '')).strip(), ensure_str(row.get('Direct / Cell Number', '')).strip()])
-#                         for phone_number in phone_numbers:
-#                             if phone_number and is_valid_phone_number(phone_number):
-#                                 # Avoid duplicates
-#                                 LeadPhoneNumbers.objects.get_or_create(lead=lead, sheet=sheet, value=phone_number)
-
-#                         email = ensure_str(row.get('Email', ''))
-#                         if email:
-#                             LeadEmails.objects.get_or_create(lead=lead, sheet=sheet, value=email)
-
-#                         contact_name = ensure_str(row.get('DM Name', ''))
-#                         if contact_name:
-#                             LeadContactNames.objects.get_or_create(lead=lead, sheet=sheet, value=contact_name)
-
-#                         # Ensure that the lead is linked to the current sheet
-#                         if sheet not in lead.sheets.all():
-#                             lead.sheets.add(sheet)
-
-#                         sheet.is_approved = True
-#                         sheet.save()
-#                     return sheet
-
-#                 with ThreadPoolExecutor(max_workers=4) as executor:
-#                     results = list(executor.map(process_file, files))
-
-
-#                 # After processing, check what was skipped or errored out
-#                 logger.info(f"Skipped {len(skipped_files)} files: {skipped_files}")
-#                 logger.info(f"Encountered {len(errors)} errors: {errors}")
-
-#                 uploaded_sheets = [sheet for sheet in results if sheet]
-
-#                 total_leads = sum(sheet.leads.count() for sheet in uploaded_sheets)
-#                 Log.objects.create(message=f"[{request.user.username}] Uploaded [{total_leads}] total leads, [{len(uploaded_sheets)}] Sheets.")
-#                 print(f"[{request.user.username}] Uploaded [{total_leads}] total leads, [{len(uploaded_sheets)}] Sheets.")
-
-#                 return render(request, "leads/import_sheet.html", {
-#                     "form": form,
-#                     "success": "Sheets imported successfully."
-#                 })
-#             else:
-#                 logger.error("The specified directory does not exist.")
-#                 return render(request, "leads/import_sheet.html", {
-#                     "form": form,
-#                     "error": "The specified directory does not exist."
-#                 })
-
-#     return render(request, "leads/import_sheet.html", {
-#         "form": form
-#     })
+}

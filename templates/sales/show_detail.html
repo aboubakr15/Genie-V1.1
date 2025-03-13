@@ -35,7 +35,6 @@
                                                 <th data-field="company_name" style="min-width: 200px;">Company Name</th>
                                                 <th data-field="time_zone" style="min-width: 50px;">Time Zone</th>
                                                 <th data-field="phone_numbers" style="min-width: 100px;">Phone Numbers</th>
-                                                <th data-field="time_zone" style="min-width: 50px;">Time Zone</th>
                                                 <th data-field="emails" style="min-width: 100px;">Emails</th>
                                                 <th data-field="contact_names" style="min-width: 100px;">Contact Names</th>
                                                 <th data-field="termination_code" style="min-width: 100px; width: 100px;">Termination</th>
@@ -68,8 +67,6 @@
                                                             class="btn btn-primary btn-sm">Add</button>
                                                     </div>
                                                 </td>
-
-                                                <td>{{ lead_detail.lead.time_zone }}</td>
 
                                                 <!-- Emails Column -->
                                                 <td>
@@ -126,7 +123,7 @@
                                                     <input type="date" name="cb_date_{{ lead_detail.lead.id }}"
                                                         class="form-control cb-date"
                                                         value="{{ lead_detail.tc.CB_date|date:'Y-m-d' }}"
-                                                        {% if not lead_detail.tc or lead_detail.tc.flag.name != 'CB' or lead_detail.tc.flag.name != 'PR' %}disabled{% endif %}>
+                                                        {% if not lead_detail.tc or lead_detail.tc.flag.name != 'CB' or lead_detail.tc.flag.name != 'PR' or lead_detail.tc.flag.name != 'IC' %}disabled{% endif %}>
                                                 </td>
 
                                                 <!-- Notes Column -->
@@ -190,8 +187,9 @@
         const selectedTerminationCode = select.value;
         const cbTerminationCodeId = "4"; // CB ID
         const prTerminationCodeId = "2"; // PR ID
+        const icTerminationCodeId = "6"; // IC ID
 
-        if (selectedTerminationCode == cbTerminationCodeId || selectedTerminationCode == prTerminationCodeId) {
+        if (selectedTerminationCode == cbTerminationCodeId || selectedTerminationCode == prTerminationCodeId || selectedTerminationCode == icTerminationCodeId) {
             cbDateInput.prop('disabled', false);
         } else {
             cbDateInput.prop('disabled', true);
