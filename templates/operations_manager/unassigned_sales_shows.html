@@ -172,6 +172,22 @@
             });
         });
 
+        // Handle form submissions with selected checkboxes
+        function prepareFormSubmission(form, selectedIds) {
+            // Remove existing hidden inputs
+            const existingInputs = form.querySelectorAll('input[name="selected_shows"]');
+            existingInputs.forEach(input => input.remove());
+
+            // Add new hidden inputs for each selected ID
+            selectedIds.forEach(id => {
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'selected_shows';
+                hiddenInput.value = id;
+                form.appendChild(hiddenInput);
+            });
+        }
+
         // Assign form handler
         document.getElementById('assignForm').addEventListener('submit', function(e) {
             const selectedIds = Array.from(document.querySelectorAll('.show-checkbox:checked'))
@@ -183,11 +199,7 @@
                 return;
             }
 
-            const hiddenInput = document.createElement('input');
-            hiddenInput.type = 'hidden';
-            hiddenInput.name = 'selected_shows';
-            hiddenInput.value = selectedIds.join(',');
-            this.appendChild(hiddenInput);
+            prepareFormSubmission(this, selectedIds);
         });
 
         // Archive form handler
@@ -201,11 +213,7 @@
                 return;
             }
 
-            const hiddenInput = document.createElement('input');
-            hiddenInput.type = 'hidden';
-            hiddenInput.name = 'selected_shows';
-            hiddenInput.value = selectedIds.join(',');
-            this.appendChild(hiddenInput);
+            prepareFormSubmission(this, selectedIds);
         });
     });
 </script>

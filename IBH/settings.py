@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     'sales',
     "api",
     "rest_framework",
+    # "debug_toolbar",
     # 'widget_tweaks',
 ]
 
@@ -85,7 +86,13 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # "debug_toolbar.middleware.DebugToolbarMiddleware",
 ]
+
+# # for debug_toolbar
+# INTERNAL_IPS = [
+#     "127.0.0.1",
+# ]
 
 ROOT_URLCONF = 'IBH.urls'
 

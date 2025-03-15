@@ -397,6 +397,8 @@ def unassigned_sales_shows(request, label='EHUB'):
     paginator = Paginator(unassigned_shows, 60)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
+    # Prefetch related leads and sheet data for just the current page
+    page_shows = list(page_obj.object_list.prefetch_related('leads', 'sheet'))
 
     # Only calculate timezone counts for labels where it applies
     timezone_counts = {}
@@ -407,14 +409,14 @@ def unassigned_sales_shows(request, label='EHUB'):
                 'cen': show.leads.filter(time_zone='CEN').count(),
                 'pac': show.leads.filter(time_zone='PAC').count()
             }
-            for show in unassigned_shows
+            for show in page_obj.object_list
         }
 
     blue_red_leads_counts = {
         show.id: LeadsColors.objects.filter(
             lead__in=show.leads.all(), sheet=show.sheet, color__in=['blue', 'red']
         ).count()
-        for show in unassigned_shows
+        for show in page_obj.object_list
     }
 
     # Prepare list of sales agents
