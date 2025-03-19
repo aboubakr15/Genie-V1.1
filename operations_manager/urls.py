@@ -62,7 +62,7 @@ urlpatterns = [
 
     path('notifications/', notifications, name='notifications'),
 
-    path('archive-sales-show/<int:show_id>/', archive_sales_show, name='archive-sales-show'),  # New URL pattern
+    path('archive-sales-show/<int:show_id>/', archive_sales_show, name='archive-sales-show'),
 
     path('archive-sales-show-bulk/', archive_sales_show_bulk, name='archive_sales_show_bulk'),
     

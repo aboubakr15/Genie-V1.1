@@ -662,23 +662,19 @@ def notifications(request):
 @user_passes_test(lambda user: is_in_group(user, "operations_manager"))
 def archive_sales_show(request, show_id):
     if request.method == 'POST':
-        selected_shows = request.POST.get('selected_shows', '').split(',')
-        for show_id in selected_shows:
-            if show_id.isdigit():
-                show = get_object_or_404(SalesShow, id=int(show_id))
-                show.is_archived = True
-                show.save()
+        show = get_object_or_404(SalesShow, id=int(show_id))
+        if show:
+            show.is_archived = True
+            show.save()
         
-        return redirect(request.META.get('HTTP_REFERER', 'operations_manager:unassigned-sales-shows'))
+        return redirect(request.META.get('HTTP_REFERER', 'operations_manager:assigned-sales-shows'))
 
 
 def archive_sales_show_bulk(request):
     if request.method == 'POST':
-        # Get comma-separated string and split into list
         selected_shows = request.POST.get('selected_shows', '').split(',')
-        
         for show_id in selected_shows:
-            if show_id.isdigit():  # Validate numeric ID
+            if show_id.isdigit():
                 show = get_object_or_404(SalesShow, id=int(show_id))
                 show.is_archived = True
                 show.save()
