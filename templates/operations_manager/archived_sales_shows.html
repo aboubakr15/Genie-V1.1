@@ -10,6 +10,15 @@
                         <div class="card-body">
                             <h5 class="card-title">Archived Sales Shows</h5>
 
+                            <form method="GET" action="" class="mb-4">
+                                <div class="input-group">
+                                    <input type="text" name="q" class="form-control" placeholder="Search archived sales shows..." value="{{ request.GET.q }}">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-search"></i> Search
+                                    </button>
+                                </div>
+                            </form>
+
                             {% if page_obj.object_list %}
                             <div class="table-responsive">
                                 <table class="table table-bordered mt-3">

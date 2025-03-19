@@ -683,14 +683,22 @@ def archive_sales_show_bulk(request):
 
 @user_passes_test(lambda user: is_in_group(user, "operations_manager"))
 def archived_sales_shows(request):
+    query = request.GET.get('q', '')  # Get search query
     archived_shows = SalesShow.objects.filter(is_archived=True).order_by('-done_date')
+
+    if query:
+        archived_shows = archived_shows.filter(name__icontains=query)  # Filter by show name
 
     # Pagination
     paginator = Paginator(archived_shows, 10)  # Show 10 shows per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    return render(request, 'operations_manager/archived_sales_shows.html', {'page_obj': page_obj})
+    return render(request, 'operations_manager/archived_sales_shows.html', {
+        'page_obj': page_obj,
+        'query': query
+    })
+
 
 
 @user_passes_test(lambda user: is_in_group(user, "operations_manager"))
@@ -725,14 +733,22 @@ def archive_ready_show(request, show_id):
 
 @user_passes_test(lambda user: is_in_group(user, "operations_manager"))
 def archived_ready_shows(request):
-    archived_sheets = ReadyShow.objects.filter(is_archived=True).order_by('-done_date')  # Fetch archived sheets
+    query = request.GET.get('q', '')  # Get search query
+    archived_sheets = ReadyShow.objects.filter(is_archived=True).order_by('-done_date')
+
+    if query:
+        archived_sheets = archived_sheets.filter(sheet__name__icontains=query)  # Filter by show name
 
     # Pagination
     paginator = Paginator(archived_sheets, 60)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    return render(request, 'operations_manager/archived_ready_shows.html', {'page_obj': page_obj})
+    return render(request, 'operations_manager/archived_ready_shows.html', {
+        'page_obj': page_obj,
+        'query': query
+    })
+
 
 
 @user_passes_test(lambda user: is_in_group(user, "operations_manager"))

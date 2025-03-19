@@ -511,14 +511,22 @@ def archive_sheet(request, sheet_id):
 
 @user_passes_test(lambda user: is_in_group(user, "administrator"))
 def archived_sheets(request):
-    archived_sheets = Sheet.objects.filter(is_archived=True).order_by('-id')  # Fetch archived sheets
+    query = request.GET.get('q', '')  # Get search query
+    archived_sheets = Sheet.objects.filter(is_archived=True).order_by('-id')
+
+    if query:
+        archived_sheets = archived_sheets.filter(name__icontains=query)  # Filter by sheet name
 
     # Pagination
     paginator = Paginator(archived_sheets, 60)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    return render(request, 'administrator/archived_sheets.html', {'page_obj': page_obj})
+    return render(request, 'administrator/archived_sheets.html', {
+        'page_obj': page_obj,
+        'query': query
+    })
+
 
 
 @user_passes_test(lambda user: is_in_group(user, "administrator"))
