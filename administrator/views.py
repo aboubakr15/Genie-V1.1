@@ -433,7 +433,7 @@ def cut_sheet_into_ready_show(request, sheet_id):
             sheet_ws.append([lead.name, lead_email])
 
     # Save the Excel workbook   //IBH/Inbound/Mails
-    save_path = os.path.join("C:\\Users\\MEAPAL\\Downloads", f"{sheet.name}.xlsx")
+    save_path = os.path.join("//IBH/Inbound/Mails", f"{sheet.name}.xlsx")
     workbook.save(save_path)
 
     return redirect('administrator:manage-sheets')
