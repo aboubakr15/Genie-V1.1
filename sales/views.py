@@ -6,7 +6,7 @@ from main.models import (LeadContactNames, LeadEmails, LeadPhoneNumbers, LeadTer
     LeadTerminationHistory, SalesShow, TerminationCode, Lead, LeadsColors, SalesLog, IncomingsCount, Notification)
 from django.utils import timezone
 from .forms import *
-from django.db.models import Count, Sum, Q
+from django.db.models import Count, Sum
 from datetime import datetime
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 import logging

@@ -33,5 +33,9 @@ urlpatterns = [
 ]
 
 if settings.DEBUG:
-    urlpatterns += static(settings.STATIC_URL,
-                          document_root=settings.STATICFILES_DIRS[0])
+    # import debug_toolbar  # Import Debug Toolbar only in DEBUG mode
+    # urlpatterns += [
+    #     path("__debug__/", include(debug_toolbar.urls)),  # Add Debug Toolbar URLs
+    # ]
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATICFILES_DIRS[0])
+

@@ -432,7 +432,7 @@ def cut_sheet_into_ready_show(request, sheet_id):
             lead_email = lead_email_obj.value
             sheet_ws.append([lead.name, lead_email])
 
-    # Save the Excel workbook  
+    # Save the Excel workbook   //IBH/Inbound/Mails
     save_path = os.path.join("//IBH/Inbound/Mails", f"{sheet.name}.xlsx")
     workbook.save(save_path)
 
@@ -507,18 +507,57 @@ def archive_sheet(request, sheet_id):
         
         # Redirect to the referring URL
         return HttpResponseRedirect(referer_url)
+
+
+@user_passes_test(lambda user: is_in_group(user, "administrator"))
+def archive_sheet_bulk(request):
+    if request.method == 'POST':
+        selected_sheets = request.POST.getlist('selected_sheets')
+        
+        if not selected_sheets:
+            messages.warning(request, "No sheets selected.")
+            return redirect(request.META.get('HTTP_REFERER', 'administrator:manage-sheets'))
+        
+        # Archive each selected sheet
+        archived_count = 0
+        for sheet_id in selected_sheets:
+            try:
+                sheet = get_object_or_404(Sheet, id=int(sheet_id))
+                sheet.is_archived = True
+                sheet.save()
+                archived_count += 1
+            except (ValueError, Sheet.DoesNotExist):
+                # Handle invalid sheet IDs gracefully
+                continue
+        
+        if archived_count > 0:
+            messages.success(request, f"Successfully archived {archived_count} sheet(s).")
+        else:
+            messages.error(request, "No sheets were archived.")
+                
+        return redirect(request.META.get('HTTP_REFERER', 'administrator:manage-sheets'))
     
+    # If not POST request, redirect back
+    return redirect('administrator:manage-sheets')
+
 
 @user_passes_test(lambda user: is_in_group(user, "administrator"))
 def archived_sheets(request):
-    archived_sheets = Sheet.objects.filter(is_archived=True).order_by('-id')  # Fetch archived sheets
+    query = request.GET.get('q', '')  # Get search query
+    archived_sheets = Sheet.objects.filter(is_archived=True).order_by('-id')
+
+    if query:
+        archived_sheets = archived_sheets.filter(name__icontains=query)  # Filter by sheet name
 
     # Pagination
     paginator = Paginator(archived_sheets, 60)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    return render(request, 'administrator/archived_sheets.html', {'page_obj': page_obj})
+    return render(request, 'administrator/archived_sheets.html', {
+        'page_obj': page_obj,
+        'query': query
+    })
 
 
 @user_passes_test(lambda user: is_in_group(user, "administrator"))

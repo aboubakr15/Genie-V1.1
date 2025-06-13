@@ -79,7 +79,7 @@ def manage_leads_teams(request):
     return render(request, "operations_manager/manage_teams.html", context)
 
 
-# Assign Each Lead Member to his Team Leader
+# Assign Each Leads team Member to his Team Leader
 @user_passes_test(lambda user: is_in_group(user, "operations_manager"))
 def assign_lead_to_leader(request):
     if request.method == 'POST':
@@ -397,6 +397,8 @@ def unassigned_sales_shows(request, label='EHUB'):
     paginator = Paginator(unassigned_shows, 60)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
+    # Prefetch related leads and sheet data for just the current page
+    page_shows = list(page_obj.object_list.prefetch_related('leads', 'sheet'))
 
     # Only calculate timezone counts for labels where it applies
     timezone_counts = {}
@@ -407,14 +409,14 @@ def unassigned_sales_shows(request, label='EHUB'):
                 'cen': show.leads.filter(time_zone='CEN').count(),
                 'pac': show.leads.filter(time_zone='PAC').count()
             }
-            for show in unassigned_shows
+            for show in page_obj.object_list
         }
 
     blue_red_leads_counts = {
         show.id: LeadsColors.objects.filter(
             lead__in=show.leads.all(), sheet=show.sheet, color__in=['blue', 'red']
         ).count()
-        for show in unassigned_shows
+        for show in page_obj.object_list
     }
 
     # Prepare list of sales agents
@@ -433,7 +435,6 @@ def unassigned_sales_shows(request, label='EHUB'):
     }
 
     return render(request, 'operations_manager/unassigned_sales_shows.html', context)
-
 
 
 
@@ -661,27 +662,42 @@ def notifications(request):
 @user_passes_test(lambda user: is_in_group(user, "operations_manager"))
 def archive_sales_show(request, show_id):
     if request.method == 'POST':
-        show = get_object_or_404(SalesShow, id=show_id)  # Fetch the show by ID
-        show.is_archived = True
-        show.save()  # Save the changes to the database
+        show = get_object_or_404(SalesShow, id=int(show_id))
+        if show:
+            show.is_archived = True
+            show.save()
         
-        # Get the current URL from the 'HTTP_REFERER' header
-        referer_url = request.META.get('HTTP_REFERER', 'operations_manager:unassigned-sales-shows')
-        
-        # Redirect to the referring URL (where the request came from)
-        return HttpResponseRedirect(referer_url)
+        return redirect(request.META.get('HTTP_REFERER', 'operations_manager:assigned-sales-shows'))
 
+
+def archive_sales_show_bulk(request):
+    if request.method == 'POST':
+        selected_shows = request.POST.get('selected_shows', '').split(',')
+        for show_id in selected_shows:
+            if show_id.isdigit():
+                show = get_object_or_404(SalesShow, id=int(show_id))
+                show.is_archived = True
+                show.save()
+                
+        return redirect(request.META.get('HTTP_REFERER', 'operations_manager:unassigned-sales-shows'))
 
 @user_passes_test(lambda user: is_in_group(user, "operations_manager"))
 def archived_sales_shows(request):
+    query = request.GET.get('q', '')  # Get search query
     archived_shows = SalesShow.objects.filter(is_archived=True).order_by('-done_date')
+
+    if query:
+        archived_shows = archived_shows.filter(name__icontains=query)  # Filter by show name
 
     # Pagination
     paginator = Paginator(archived_shows, 10)  # Show 10 shows per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    return render(request, 'operations_manager/archived_sales_shows.html', {'page_obj': page_obj})
+    return render(request, 'operations_manager/archived_sales_shows.html', {
+        'page_obj': page_obj,
+        'query': query
+    })
 
 
 @user_passes_test(lambda user: is_in_group(user, "operations_manager"))
@@ -715,15 +731,49 @@ def archive_ready_show(request, show_id):
     
 
 @user_passes_test(lambda user: is_in_group(user, "operations_manager"))
+def archive_ready_show_bulk(request):
+    """
+    Bulk archive multiple ready shows
+    """
+    if request.method == 'POST':
+        selected_ready_shows = request.POST.getlist('selected_ready_shows')
+        
+        # Ensure there are selected shows
+        if not selected_ready_shows:
+            messages.warning(request, "No shows selected.")
+            return redirect(request.META.get('HTTP_REFERER', 'operations_manager:ready-shows'))
+
+        # Archive each selected ready show
+        for show_id in selected_ready_shows:
+            if show_id.isdigit():
+                ready_show = get_object_or_404(ReadyShow, id=int(show_id))
+                ready_show.is_archived = True
+                ready_show.save()
+        
+        messages.success(request, f"Successfully archived {len(selected_ready_shows)} ready shows.")
+    else:
+        messages.error(request, "Invalid request method.")
+    
+    return redirect(request.META.get('HTTP_REFERER', 'operations_manager:ready-shows'))
+
+
+@user_passes_test(lambda user: is_in_group(user, "operations_manager"))
 def archived_ready_shows(request):
-    archived_sheets = ReadyShow.objects.filter(is_archived=True).order_by('-done_date')  # Fetch archived sheets
+    query = request.GET.get('q', '')  # Get search query
+    archived_sheets = ReadyShow.objects.filter(is_archived=True).order_by('-done_date')
+
+    if query:
+        archived_sheets = archived_sheets.filter(sheet__name__icontains=query)  # Filter by show name
 
     # Pagination
     paginator = Paginator(archived_sheets, 60)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    return render(request, 'operations_manager/archived_ready_shows.html', {'page_obj': page_obj})
+    return render(request, 'operations_manager/archived_ready_shows.html', {
+        'page_obj': page_obj,
+        'query': query
+    })
 
 
 @user_passes_test(lambda user: is_in_group(user, "operations_manager"))

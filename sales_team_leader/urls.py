@@ -1,9 +1,10 @@
 from django.urls import path, re_path
 from .views import (view_team_member_recycled, index, view_team_member, view_team_prospect, view_team_recycled,
-                    view_team_shows, search, sales_team_leader_notifications)
+                    view_team_shows, sales_team_leader_notifications)
 from sales.views import (agent_assigned_shows, show_detail, view_done_recycled_shows,
     view_done_shows, view_recycled_shows, view_saved_leads)
 from main.views import sales_log_view, mark_as_read
+from sales_manager.views import search
 
 app_name="sales_team_leader"
 

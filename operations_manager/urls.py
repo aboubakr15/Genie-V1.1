@@ -3,9 +3,9 @@ from .views import (assign_lead_to_leader, done_ready_shows, index, manage_leads
     sheet_detail, unassigned_sales_shows, view_agent_done_shows, view_sales_agents)
 
 from .views import (assign_sales_show, ready_shows_view, cut_ready_show_into_sales_shows, price_requests_view,
-                    cut_ready_shows, archived_sales_shows, assigned_sales_shows, update_price_requests,
+                    cut_ready_shows, archived_sales_shows, assigned_sales_shows, update_price_requests, archive_sales_show_bulk,
                     manage_referrals, notifications, archive_sales_show, unarchive_sales_show, archive_ready_show,
-                    unarchive_ready_show, archived_ready_shows, unassigned_x_sales_shows)
+                    unarchive_ready_show, archived_ready_shows, unassigned_x_sales_shows, archive_ready_show_bulk)
 
 from main.views import (lead_details, auto_fill, edit_lead, delete_lead, add_lead, import_folder,
                         upload_sheet, manage_filter_words, delete_filter_word)
@@ -62,8 +62,12 @@ urlpatterns = [
 
     path('notifications/', notifications, name='notifications'),
 
-    path('archive-sales-show/<int:show_id>/', archive_sales_show, name='archive-sales-show'),  # New URL pattern
+    path('archive-sales-show/<int:show_id>/', archive_sales_show, name='archive-sales-show'),
+
+    path('archive-sales-show-bulk/', archive_sales_show_bulk, name='archive_sales_show_bulk'),
     
+    path('archive-ready-show-bulk/', archive_ready_show_bulk, name='archive_ready_show_bulk'),
+
     path('cut-ready-shows/', cut_ready_shows, name='cut-ready-shows'),
 
     path('unarchive/<int:show_id>/', unarchive_sales_show, name='unarchive-sales-show'),

@@ -21,13 +21,14 @@
                             {% if page_obj %}
 
                             <!-- Form to process selected sheets -->
-                            <form method="post" action="{% url 'administrator:cut-multiple-x-sheets' %}">
+                            <form method="post" action="{% url 'administrator:cut-multiple-x-sheets' %}" id="cutForm">
                                 {% csrf_token %}
 
-                                <!-- Button to cut all selected sheets at once, placed above the table -->
-                                <button class="btn btn-primary mb-2" type="submit">Cut Selected Sheets</button>
-
-
+                                <!-- Buttons for bulk actions -->
+                                <div class="d-flex justify-content-between mb-2">
+                                    <button class="btn btn-primary" type="submit">Cut Selected Sheets</button>
+                                    <button class="btn btn-danger" type="submit" form="archiveForm">Archive Selected</button>
+                                </div>
 
                                 <table class="table table-bordered">
                                     <thead>
@@ -37,14 +38,14 @@
                                             <th scope="col">Done By</th>
                                             <th scope="col">Number of Leads</th>
                                             <th scope="col">Done Date</th>
-                                            <th scope="col">Actions</th>
+                                            <!-- <th scope="col">Actions</th> -->
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {% for sheet in page_obj %}
                                         <tr>
                                             <!-- Checkbox to select each sheet -->
-                                            <td><input type="checkbox" name="selected_sheets" value="{{ sheet.id }}">
+                                            <td><input type="checkbox" name="selected_sheets" value="{{ sheet.id }}" class="sheet-checkbox">
                                             </td>
                                             <td>{{ sheet.name }}</td>
                                             <td>
@@ -56,16 +57,21 @@
                                             </td>
                                             <td>{{ sheet.leads.count }}</td>
                                             <td>{{ sheet.created_at|date:"d-m-Y H:i" }}</td>
-                                            <td>
+                                            <!-- <td>
                                                 <form method="POST" action="{% url 'administrator:archive-sheet' sheet.id %}">
                                                     {% csrf_token %}
-                                                    <button type="submit" class="btn btn-danger">Archive</button>
+                                                    <button type="submit" class="btn btn-danger btn-sm">Archive</button>
                                                 </form>                                                
-                                            </td>
+                                            </td> -->
                                         </tr>
                                         {% endfor %}
                                     </tbody>
                                 </table>
+                            </form>
+
+                            <!-- Archive Form (hidden, handled by JavaScript) -->
+                            <form method="POST" action="{% url 'administrator:archive-sheet-bulk' %}" id="archiveForm">
+                                {% csrf_token %}
                             </form>
 
                             <!-- Pagination controls -->
@@ -129,12 +135,58 @@
 </main>
 
 <script>
-    // JavaScript to select/deselect all checkboxes
-    document.getElementById('select_all').onclick = function () {
-        var checkboxes = document.querySelectorAll('input[name="selected_sheets"]');
-        for (var checkbox of checkboxes) {
-            checkbox.checked = this.checked;
+    // Handle bulk actions
+    document.addEventListener('DOMContentLoaded', function() {
+        // Select All checkbox
+        document.getElementById('select_all').addEventListener('change', function(e) {
+            document.querySelectorAll('.sheet-checkbox').forEach(checkbox => {
+                checkbox.checked = e.target.checked;
+            });
+        });
+
+        // Handle form submissions with selected checkboxes
+        function prepareFormSubmission(form, selectedIds) {
+            // Remove existing hidden inputs
+            const existingInputs = form.querySelectorAll('input[name="selected_sheets"]');
+            existingInputs.forEach(input => input.remove());
+
+            // Add new hidden inputs for each selected ID
+            selectedIds.forEach(id => {
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'selected_sheets';
+                hiddenInput.value = id;
+                form.appendChild(hiddenInput);
+            });
         }
-    }
+
+        // Cut form handler
+        document.getElementById('cutForm').addEventListener('submit', function(e) {
+            const selectedIds = Array.from(document.querySelectorAll('.sheet-checkbox:checked'))
+                .map(checkbox => checkbox.value);
+            
+            if (selectedIds.length === 0) {
+                e.preventDefault();
+                alert('Please select at least one sheet to cut');
+                return;
+            }
+
+            prepareFormSubmission(this, selectedIds);
+        });
+
+        // Archive form handler
+        document.getElementById('archiveForm').addEventListener('submit', function(e) {
+            const selectedIds = Array.from(document.querySelectorAll('.sheet-checkbox:checked'))
+                .map(checkbox => checkbox.value);
+
+            if (selectedIds.length === 0) {
+                e.preventDefault();
+                alert('Please select at least one sheet to archive');
+                return;
+            }
+
+            prepareFormSubmission(this, selectedIds);
+        });
+    });
 </script>
 {% endblock content %}

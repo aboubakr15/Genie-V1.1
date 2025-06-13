@@ -336,71 +336,6 @@ def view_team_member_recycled(request, member_id, label="new"):
     return render(request, "sales_team_leader/view_team_member_recycled.html", context)
 
 
-@user_passes_test(lambda user: user.groups.filter(name__in=["sales_team_leader", "sales_manager"]).exists())
-def search(request):
-    if request.method == 'GET':
-        return render(request, "sales_team_leader/search.html")
-
-    leads_with_shows = []  # List to hold leads with their corresponding shows
-    query = request.POST.get('query', '').strip()
-    search_by = request.POST.get('search_by', 'lead_name')  # Default search by lead name
-
-    # Get the current user (sales team leader)
-    current_user = request.user
-
-    # Get shows for the current user
-    user_shows = SalesShow.objects.filter(Agent=current_user)
-
-    # Get leads from the user's shows
-    user_leads = Lead.objects.filter(sales_shows__in=user_shows).distinct().order_by('-id')
-
-    # Get team members of the current user
-    team_members = UserLeader.objects.filter(leader=current_user).values_list('user', flat=True)
-
-    # Get shows for the team members
-    team_member_shows = SalesShow.objects.filter(Agent__in=team_members).order_by('-id')
-
-    # Get leads from the team members' shows
-    team_member_leads = Lead.objects.filter(sales_shows__in=team_member_shows).distinct().order_by('-id')
-
-    # Combine user and team member leads
-    all_leads = user_leads | team_member_leads
-
-    # If there is a search query, filter based on the selected search_by option
-    if query:
-        if search_by == 'lead_name':
-            all_leads = all_leads.filter(name__icontains=query).distinct()
-        elif search_by == 'phone_number':
-            phone_numbers = LeadPhoneNumbers.objects.filter(
-                value__icontains=query,
-                sheet__in=user_shows.values('sheet') | team_member_shows.values('sheet')
-            )
-            all_leads = Lead.objects.filter(id__in=phone_numbers.values('lead_id')).distinct()
-        elif search_by == 'show_name':
-            shows_by_name = SalesShow.objects.filter(name__icontains=query, Agent__in=[current_user] + list(team_members))
-            all_leads = Lead.objects.filter(sales_shows__in=shows_by_name).distinct()
-
-    # Create a list of tuples (lead, show) for each lead's associated shows
-    for lead in all_leads:
-        shows = lead.sales_shows.filter(Agent__in=[current_user] + list(team_members))
-        for show in shows:
-            leads_with_shows.append((lead, show))
-
-    # Paginate results
-    paginator = Paginator(leads_with_shows, 10)  # Show 10 leads per page
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-
-    context = {
-        'leads_with_shows': page_obj,
-        'query': query,
-        'search_by': search_by,
-    }
-
-    return render(request, "sales_team_leader/search.html", context)
-
-
-
 @user_passes_test(lambda user: is_in_group(user, "sales_team_leader"))
 def sales_team_leader_notifications(request):
     user = request.user
@@ -421,3 +356,69 @@ def sales_team_leader_notifications(request):
         'notifications': notifications_page
     })
 
+
+
+## Used for search withtin the scope of the user's team but disabeled for now and using the sales_manager search instead
+
+# @user_passes_test(lambda user: user.groups.filter(name__in=["sales_team_leader", "sales_manager"]).exists())
+# def search(request):
+#     if request.method == 'GET':
+#         return render(request, "sales_team_leader/search.html")
+
+#     leads_with_shows = []  # List to hold leads with their corresponding shows
+#     query = request.POST.get('query', '').strip()
+#     search_by = request.POST.get('search_by', 'lead_name')  # Default search by lead name
+
+#     # Get the current user (sales team leader)
+#     current_user = request.user
+
+#     # Get shows for the current user
+#     user_shows = SalesShow.objects.filter(Agent=current_user)
+
+#     # Get leads from the user's shows
+#     user_leads = Lead.objects.filter(sales_shows__in=user_shows).distinct().order_by('-id')
+
+#     # Get team members of the current user
+#     team_members = UserLeader.objects.filter(leader=current_user).values_list('user', flat=True)
+
+#     # Get shows for the team members
+#     team_member_shows = SalesShow.objects.filter(Agent__in=team_members).order_by('-id')
+
+#     # Get leads from the team members' shows
+#     team_member_leads = Lead.objects.filter(sales_shows__in=team_member_shows).distinct().order_by('-id')
+
+#     # Combine user and team member leads
+#     all_leads = user_leads | team_member_leads
+
+#     # If there is a search query, filter based on the selected search_by option
+#     if query:
+#         if search_by == 'lead_name':
+#             all_leads = all_leads.filter(name__icontains=query).distinct()
+#         elif search_by == 'phone_number':
+#             phone_numbers = LeadPhoneNumbers.objects.filter(
+#                 value__icontains=query,
+#                 sheet__in=user_shows.values('sheet') | team_member_shows.values('sheet')
+#             )
+#             all_leads = Lead.objects.filter(id__in=phone_numbers.values('lead_id')).distinct()
+#         elif search_by == 'show_name':
+#             shows_by_name = SalesShow.objects.filter(name__icontains=query, Agent__in=[current_user] + list(team_members))
+#             all_leads = Lead.objects.filter(sales_shows__in=shows_by_name).distinct()
+
+#     # Create a list of tuples (lead, show) for each lead's associated shows
+#     for lead in all_leads:
+#         shows = lead.sales_shows.filter(Agent__in=[current_user] + list(team_members))
+#         for show in shows:
+#             leads_with_shows.append((lead, show))
+
+#     # Paginate results
+#     paginator = Paginator(leads_with_shows, 10)  # Show 10 leads per page
+#     page_number = request.GET.get('page')
+#     page_obj = paginator.get_page(page_number)
+
+#     context = {
+#         'leads_with_shows': page_obj,
+#         'query': query,
+#         'search_by': search_by,
+#     }
+
+#     return render(request, "sales_team_leader/search.html", context)

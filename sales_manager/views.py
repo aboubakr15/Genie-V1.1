@@ -264,7 +264,7 @@ def lead_history_view(request, lead_id):
     return render(request, 'sales_manager/lead_history.html', context)
 
 
-@user_passes_test(lambda user: is_in_group(user, "sales_manager"))
+@user_passes_test(lambda user: user.groups.filter(name__in=["sales_team_leader", "sales_manager"]).exists())
 def search(request):
     if request.method == 'GET':
         return render(request, "sales_manager/search.html")
