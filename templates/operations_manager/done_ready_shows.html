@@ -48,7 +48,9 @@
                                 <tbody>
                                     {% for ready_show in done_shows %}
                                     <tr>
-                                        <td>{{ ready_show.sheet.name }}</td>
+                                        <td>
+                                            <a href="{% url 'operations_manager:view-ready-show' ready_show.id %}">{{ ready_show.sheet.name }}</a>
+                                        </td>
                                         <td>{{ ready_show.leads.count }}</td>
                                         <td>{{ ready_show.done_date }}</td>
                                     </tr>

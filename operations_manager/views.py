@@ -1,5 +1,5 @@
 from django.contrib import messages
-from main.models import (Lead, SalesTeams, UserLeader, Sheet, Lead, LeadContactNames, LeadEmails, LeadPhoneNumbers,
+from main.models import (Lead, LeadTerminationHistory, UserLeader, Sheet, Lead, LeadContactNames, LeadEmails, LeadPhoneNumbers,
                         UserLeader, SalesShow, Sheet, ReadyShow, PriceRequest, Referral, LeadsColors, Notification)
 from django.contrib.auth.models import User, Group
 from django.shortcuts import render, redirect, get_object_or_404
@@ -116,7 +116,12 @@ def sheet_detail(request, sheet_id):
     })
 
 
+
+############################################################################################################################
+
 @user_passes_test(lambda user: is_in_group(user, "operations_manager"))
+# Cutting proccess #
+####################
 def cut_ready_show_into_sales_shows(request, ready_show_id):
     # Get the ReadyShow and mark it as done
     ready_show = get_object_or_404(ReadyShow, id=ready_show_id)
@@ -124,13 +129,27 @@ def cut_ready_show_into_sales_shows(request, ready_show_id):
     ready_show.done_date = timezone.now()
     ready_show.save()
 
+    # Array to Hold Referrals
+    leads_to_referral = []
+
     # Labels to handle separately
     special_labels = ['europe', 'asia', 'uk']
 
     # Check if the ReadyShow has a special label
     if ready_show.label.lower() in special_labels:
-        # Get leads for the special label that have a time zone
-        leads = list(ready_show.leads.exclude(time_zone__isnull=True))
+        # Get all leads for the special label that have a time zone
+        all_leads = list(ready_show.leads.exclude(time_zone__isnull=True))
+        
+        # Filter out leads that match the termination condition
+        leads = []
+        
+        for lead in all_leads:
+            if LeadTerminationHistory.objects.filter(lead=lead, termination_code__name__in=['show', 'CD']).exists():
+                if LeadTerminationHistory.objects.filter(lead=lead, termination_code__name='CD').exists():
+                    leads_to_referral.append(lead)
+                continue
+            leads.append(lead)
+        
         total_leads = len(leads)
 
         # Determine the number of SalesShows needed based on the number of leads
@@ -182,7 +201,20 @@ def cut_ready_show_into_sales_shows(request, ready_show_id):
     else:
         # Original behavior for other labels
         time_zones = ['cen', 'est', 'pac']
-        leads_by_zone = {tz: list(ready_show.leads.filter(time_zone=tz)) for tz in time_zones}
+        all_leads_by_zone = {tz: list(ready_show.leads.filter(time_zone=tz)) for tz in time_zones}
+        
+        # Filter out leads that match the termination condition for each time zone
+        leads_by_zone = {}
+        
+        for tz, zone_leads in all_leads_by_zone.items():
+            filtered_leads = []
+            for lead in zone_leads:
+                if LeadTerminationHistory.objects.filter(lead=lead, termination_code__name__in=['show', 'CD']).exists():
+                    if LeadTerminationHistory.objects.filter(lead=lead, termination_code__name='CD').exists():
+                        leads_to_referral.append(lead)
+                    continue
+                filtered_leads.append(lead)
+            leads_by_zone[tz] = filtered_leads
 
         # Calculate the total number of leads and determine the number of SalesShows needed
         total_leads = sum(len(leads) for leads in leads_by_zone.values())
@@ -234,8 +266,11 @@ def cut_ready_show_into_sales_shows(request, ready_show_id):
             sales_show.leads.add(*leads_chunk)
             sales_show.save()
 
-    return redirect(request.META.get('HTTP_REFERER', 'operations_manager:ready-shows'))
+    # Handle referrals
+    for lead in leads_to_referral:
+        Referral.objects.create(lead=lead, sheet=ready_show.sheet)
 
+    return redirect(request.META.get('HTTP_REFERER', 'operations_manager:ready-shows'))
 
 def process_all_ready_shows(request, ready_show_ids):
     """
@@ -267,6 +302,8 @@ def cut_ready_shows(request):
         messages.error(request, "Invalid request method.")
     
     return redirect(request.META.get('HTTP_REFERER', 'operations_manager:ready-shows'))
+
+############################################################################################################################
 
 
 @user_passes_test(lambda user: is_in_group(user, "operations_manager"))
@@ -788,4 +825,38 @@ def unarchive_ready_show(request, show_id):
     # Redirect to the same page (to maintain pagination and filtering)
     referer_url = request.META.get('HTTP_REFERER', 'operations_manager:archived-sheets')
     return redirect(referer_url)
+
+##########################################################################################################################
+
+def view_ready_show(request, show_id):
+    show = get_object_or_404(ReadyShow, id=show_id)
+    leads = show.leads.all()
+    sheet = show.sheet  # to filter phones/emails/names only from the related sheet
+
+    formatted_leads = []
+    for lead in leads:
+        phone_numbers = list(
+            LeadPhoneNumbers.objects.filter(lead=lead, sheet=sheet).values_list('value', flat=True)
+        )
+        emails = list(
+            LeadEmails.objects.filter(lead=lead, sheet=sheet).values_list('value', flat=True)
+        )
+        contact_names = list(
+            LeadContactNames.objects.filter(lead=lead, sheet=sheet).values_list('value', flat=True)
+        )
+
+        formatted_leads.append({
+            'company_name': lead.name,
+            'time_zone': lead.time_zone,
+            'phone_numbers': phone_numbers,
+            'emails': emails,
+            'contact_names': contact_names,
+        })
+
+    context = {
+        'show': show,
+        'leads': formatted_leads
+    }
+
+    return render(request, 'operations_manager/view_ready_show.html', context)
 

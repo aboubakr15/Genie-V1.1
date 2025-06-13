@@ -2,7 +2,7 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.models import Group, User
 from django.contrib import messages
-from main.models import (LeadEmails, Sheet, ReadyShow, Log, LeadTerminationHistory, FilterWords, Referral,
+from main.models import (LeadEmails, LeadPhoneNumbers, LeadContactNames, Sheet, ReadyShow, Log, LeadTerminationHistory, FilterWords, Referral,
                         LeadTerminationCode, SalesShow, IncomingsCount, LeadsColors)
 from main.custom_decorators import is_in_group
 from .forms import UserCreationFormWithRole, UserUpdateForm
@@ -440,7 +440,6 @@ def cut_sheet_into_ready_show(request, sheet_id):
 
 
 
-
 @user_passes_test(lambda user: is_in_group(user, "administrator"))
 def cut_multiple_sheets(request):
     if request.method == "POST":
@@ -572,3 +571,36 @@ def unarchive_sheet(request, sheet_id):
     # Redirect to the same page (to maintain pagination and filtering)
     referer_url = request.META.get('HTTP_REFERER', 'administrator:archived-sheets')
     return redirect(referer_url)
+
+
+
+def view_sheet_admin(request, sheet_id):
+    sheet = get_object_or_404(Sheet, id=sheet_id)
+    leads = sheet.leads.all()
+
+    formatted_leads = []
+    for lead in leads:
+        phone_numbers = list(
+            LeadPhoneNumbers.objects.filter(lead=lead, sheet=sheet).values_list('value', flat=True)
+        )
+        emails = list(
+            LeadEmails.objects.filter(lead=lead, sheet=sheet).values_list('value', flat=True)
+        )
+        contact_names = list(
+            LeadContactNames.objects.filter(lead=lead, sheet=sheet).values_list('value', flat=True)
+        )
+
+        formatted_leads.append({
+            'company_name': lead.name,
+            'time_zone': lead.time_zone,
+            'phone_numbers': phone_numbers,
+            'emails': emails,
+            'contact_names': contact_names,
+        })
+
+    context = {
+        'sheet': sheet,
+        'leads': formatted_leads
+    }
+
+    return render(request, 'administrator/view_sheet.html', context)

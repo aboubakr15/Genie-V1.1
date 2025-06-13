@@ -47,7 +47,9 @@
                                             <!-- Checkbox to select each sheet -->
                                             <td><input type="checkbox" name="selected_sheets" value="{{ sheet.id }}" class="sheet-checkbox">
                                             </td>
-                                            <td>{{ sheet.name }}</td>
+                                            <td>
+                                                <a href="{% url 'administrator:view-sheet' sheet.id %}">{{ sheet.name }}</a>
+                                            </td>
                                             <td>
                                                 {% if sheet.user %}
                                                 {{ sheet.user.username }}
